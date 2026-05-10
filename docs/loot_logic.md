@@ -1,62 +1,74 @@
-# OpenDiablo2 Loot Logic and Drop Mechanics
+# OpenDiablo2 Loot Code Logic, Mechanics, and What Works/Why
 
-This document provides an overview of how item drops, loot logic, and treasure classes work in the OpenDiablo2 engine based on the current codebase.
+This document explores the deep code logic of the OpenDiablo2 loot and item drop systems, the mechanics behind monster drops and droplists, extra important nuances, and an overview of what currently works and what is still a work in progress (and why).
 
-## 1. Treasure Classes (Droplists)
+---
 
-The core of the item drop system in OpenDiablo2 is the **Treasure Class (TC)**. TCs define a set of items or other TCs that can drop, along with the probabilities of each occurring. They are loaded from the game's data files (`TreasureClassEx.txt` / `TreasureClass.txt`) and represented in code by `TreasureClassRecord` (found in `d2core/d2records/treasure_class_record.go`).
+## 1. Droplists (Treasure Classes) Code Logic
 
-A `TreasureClassRecord` contains:
-- `NumPicks`: The number of items to attempt to drop from this class.
-  - If `NumPicks` is positive, the engine will roll for an item `NumPicks` times.
-  - If `NumPicks` is negative, each item's probability is treated as a guaranteed count for how many of that item will drop.
-- `FreqNoDrop`: The probability that no item drops during a pick.
-- `Treasures`: A list of potential drops (each being a `Treasure`), which can either be specific item codes (like `gld` for gold) or names of other Treasure Classes.
-- **Drop Modifiers**: Probabilities for the dropped item to be of a specific quality (`FreqUnique`, `FreqSet`, `FreqRare`, `FreqMagic`).
+In Diablo 2, "droplists" are managed by **Treasure Classes (TCs)**. In OpenDiablo2, these are represented by the `TreasureClassRecord` struct defined in `d2core/d2records/treasure_class_record.go`.
 
-### Recursive Drops
-When a Treasure Class is rolled (`ItemsFromTreasureClass` in `d2core/d2item/diablo2item/item_factory.go`), it will pick a treasure based on the defined probabilities. If the picked treasure code corresponds to another Treasure Class, the engine recursively rolls from that sub-class until it resolves to a specific item or results in a `NoDrop`.
+A single `TreasureClassRecord` consists of:
+- `NumPicks`: The total number of items the engine attempts to generate from this TC. If negative, it guarantees counts for specific items instead of random probability rolls.
+- `FreqNoDrop`: The weighted probability that *nothing* drops during a pick.
+- `Treasures`: A slice of `Treasure` structs containing a `Code` (either an item or another TC) and a `Probability` weight.
+- `FreqUnique`, `FreqSet`, `FreqRare`, `FreqMagic`: Base probabilities for determining item quality.
+
+### Execution Flow: `ItemsFromTreasureClass`
+When a monster dies or an object is opened, `ItemFactory.ItemsFromTreasureClass` (in `d2core/d2item/diablo2item/item_factory.go`) is invoked.
+1. The engine loops `NumPicks` times.
+2. For each pick, it calls `rollTreasurePick()`, which calculates the total probability (including `FreqNoDrop`) and generates a random number.
+3. If the random roll falls within an item's probability bucket, it adds that `Treasure` to a list of "Picks". If it hits `FreqNoDrop`, it moves to the next pick.
+
+---
 
 ## 2. Monster Drop Mechanics
 
-Monsters dictate which Treasure Class is used when they are killed. This is defined in their stat records.
+Monsters use different Treasure Classes depending on their type, rank, and game difficulty.
 
 ### Standard Monsters (`MonsterStatsRecord`)
-Regular monsters have different Treasure Classes depending on the difficulty and their rank:
-- **Normal**: `TreasureClassNormal`, `TreasureClassNightmare`, `TreasureClassHell`
-- **Champions**: `TreasureClassChampionNormal`, `TreasureClassChampionNightmare`, `TreasureClassChampionHell`
-- **Uniques**: `TreasureClass3UniqueNormal`, `TreasureClass3UniqueNightmare`, `TreasureClass3UniqueHell`
-- **Quests**: Special quest drops utilize `TreasureClassQuestNormal`, `TreasureClassQuestNightmare`, and `TreasureClassQuestHell` when specific quest trigger IDs are met.
+Regular monsters have different TC fields assigned in `MonStats.txt`, represented in `d2core/d2records/monster_stats_record.go`. Depending on difficulty and their rank (Normal, Champion, Unique), the engine pulls a different TC (e.g., `TreasureClassNormal`, `TreasureClassChampionHell`).
 
 ### Super Unique Monsters (`SuperUniqueRecord`)
-Super Unique monsters (like Pindleskin or Corpsefire) bypass the standard monster stats logic and have their own explicitly defined Treasure Classes for each difficulty (`TreasureClassNormal`, `TreasureClassNightmare`, `TreasureClassHell` in `d2core/d2records/monster_super_unique_record.go`).
+Super Uniques (e.g., Pindleskin, Corpsefire) have hardcoded mechanics defined in `d2core/d2records/monster_super_unique_record.go`. They bypass normal monster logic. They contain explicit `TreasureClassNormal`, `TreasureClassNightmare`, and `TreasureClassHell` fields. Super Uniques guarantee consistent, specific item drop logic distinct from standard unique monsters.
 
-## 3. Item Generation and Quality Logic
+---
 
-Once an item code is selected from a Treasure Class, the engine instantiates it via the `ItemFactory`.
+## 3. Extra Important Loot Mechanics
 
-### Dynamic Level Resolution
-Some treasure codes are dynamic, like `armo33`. The engine parses these (via `resolveDynamicTreasureCode`) to select an equivalent item (e.g., armor) with a level within a range of 3 levels from the specified number (e.g., levels 33, 34, 35).
+### Recursive Treasure Classes
+Diablo 2's loot system is deeply recursive. When a `Treasure` is picked, OpenDiablo2 checks if the `Code` matches another Treasure Class.
+- **Code Logic:** In `ItemsFromTreasureClass`, if the picked code exists in `f.asset.Records.Item.Treasure.Normal`, the engine recursively calls `ItemsFromTreasureClass(record)` on the subclass. This recursion continues until a base item (like `gld` or `armo`) is resolved.
 
-### Applying Drop Modifiers (Item Quality)
-After an item is picked, the engine determines its quality (Unique, Set, Rare, Magic, or None/Normal). Currently, this roll is largely driven by the frequencies defined directly in the `TreasureClassRecord`.
+### Dynamic Item Level Resolution
+Many TCs contain codes like `armo33` or `weap24` instead of specific items.
+- **Code Logic:** `resolveDynamicTreasureCode` strips the numeric and alphabetic components. It then looks up equivalent item records (e.g., all items labeled `armo`) and selects one whose level falls within a 3-level range (e.g., levels 33, 34, 35). This allows a single TC entry to dynamically drop a variety of equivalently leveled items.
 
-The `rollDropModifier` function uses the following baseline for probability distribution:
-1. `dropModifierBaseProbability` (which is 1024)
-2. `FreqUnique`
-3. `FreqSet`
-4. `FreqRare`
-5. `FreqMagic`
+### Quality Modifiers and Fallbacks (Reconciliation)
+After an item code is finalized, the engine determines its quality using `rollDropModifier()`.
+- **Code Logic:** It maps out probabilities using a base of 1024, plus the `FreqUnique`, `FreqSet`, `FreqRare`, and `FreqMagic` from the TC.
+- If an item rolls **Unique** but no Unique version exists for that base item, the system falls back to a **Rare** item with extra durability (or a Magic item if Rare fails). This prevents the game from crashing or dropping an invalid item.
 
-A random roll determines the quality. The `Item.applyDropModifier()` function then attempts to assign the appropriate affixes or unique/set properties.
+---
 
-### Reconciliation Fallbacks
-If the engine rolls a specific quality but cannot find a valid record for it (e.g., it rolls Unique, but there is no Unique version of that base item), the engine employs reconciliation logic:
-- A failed **Unique** or **Set** roll gracefully falls back to generating a **Rare** item (or a magic item with enhanced durability depending on limitations like `NoLimit`).
-- If an item's underlying type record explicitly restricts its quality (e.g., items that can only be Normal or Magic), `sanitizeDropModifier` will downgrade the modifier appropriately to match the item type's allowed properties.
+## 4. What Works, What is WIP, and Why
 
-## 4. Item Ratio Records (Work in Progress)
+### What Works:
+1. **Treasure Class Parsing and Resolution:** The engine successfully reads data dictionaries and accurately maps out all `TreasureClassRecords`. The recursive resolution of TCs all the way down to base items works precisely as the original game does.
+2. **Item Factory & Drop Rolls:** The probability math, including `NoDrop` frequencies and `NumPicks`, accurately mirrors vanilla drop rates based solely on TC configurations.
+3. **Dynamic Equivalency:** `armoXX` and `weapXX` mapping works perfectly, ensuring varied drops for armor and weapons.
+4. **Base Quality Modifiers:** Generating Magic, Rare, Unique, and Set items based on TC probabilities is functional, and affixes are applied correctly to Magic and Rare items.
 
-The engine reads and parses `ItemRatio.txt` into `ItemRatioRecord` structs (`d2core/d2records/item_ratio_record.go`). In the original Diablo 2 logic, these ratios dynamically impact drop rates by taking into account the monster's level, player's Magic Find, and the item's base level.
+### What is WIP / Incomplete (And Why):
+1. **Magic Find (MF):**
+   - *Current State:* Not fully implemented in drop math.
+   - *Why:* Currently, the drop modifier logic (`rollDropModifier`) relies *only* on the base probabilities defined in the TC. It does not yet inject the player's Magic Find stat or apply the necessary diminishing returns math required by Diablo 2.
+2. **Item Ratio Records (`ItemRatio.txt`):**
+   - *Current State:* The records are parsed into `ItemRatioRecord` (in `d2core/d2records/item_ratio_record.go`), but are not utilized heavily in the actual drop generation.
+   - *Why:* In vanilla D2, item ratios dynamically alter base item drop rates taking into account the monster's level (mlvl), item level (ilvl), and MF. Integrating this requires tying the `ItemFactory` closer to the monster's active stats during combat, which is complex and still under development.
+3. **Player Count (`players X` effect on NoDrop):**
+   - *Current State:* `FreqNoDrop` is statically read from the TC.
+   - *Why:* In vanilla, more players in a game exponentially reduce the `NoDrop` chance. This network/session state is not fully hooked into the item rolling logic yet.
 
-Currently, the data dictionary loaders parse these into `ItemRatios` in the `RecordManager`, separating data for Normal, Exceptional/Uber, and Class-Specific items.
+## Summary
+OpenDiablo2's loot engine successfully captures the foundational mechanics of Diablo 2—Treasure Class resolution, probability calculations, and dynamic item instantiation. The primary future work involves hooking external state factors (like Player Magic Find, Monster Level, and Player Count) into these foundational systems to achieve 1:1 drop accuracy.
