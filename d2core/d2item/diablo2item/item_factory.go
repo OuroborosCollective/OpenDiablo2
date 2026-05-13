@@ -17,6 +17,11 @@ const (
 	defaultSeed = 0
 )
 
+var (
+	reDigits   = regexp.MustCompile(`\d+`)
+	reNoDigits = regexp.MustCompile(`\D`)
+)
+
 const (
 	dropModifierBaseProbability = 1024 // base dropModifier probability total
 )
@@ -395,15 +400,13 @@ func (f *ItemFactory) resolveDynamicTreasureCode(code string) []*d2records.ItemC
 }
 
 func getStringComponent(code string) string {
-	re := regexp.MustCompile(`\d+`)
-	return string(re.ReplaceAll([]byte(code), []byte("")))
+	return string(reDigits.ReplaceAll([]byte(code), []byte("")))
 }
 
 func getNumericComponent(code string) int {
 	result := 0
 
-	re := regexp.MustCompile(`\D`)
-	numStr := string(re.ReplaceAll([]byte(code), []byte("")))
+	numStr := string(reNoDigits.ReplaceAll([]byte(code), []byte("")))
 
 	if number, err := strconv.ParseInt(numStr, 10, 32); err == nil {
 		result = int(number)
