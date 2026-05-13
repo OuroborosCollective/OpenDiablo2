@@ -7,6 +7,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-restruct/restruct v1.2.0-alpha
 	github.com/google/uuid v1.1.2
+	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/gravestench/akara v0.0.0-20201014060234-a64208a7fd3c
 	github.com/hajimehoshi/ebiten/v2 v2.0.2
 	github.com/kr/text v0.2.0 // indirect
