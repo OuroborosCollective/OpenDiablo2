@@ -6,7 +6,7 @@ https://github.com/AbyssEngine/
 
 <br clear="all" />
 
-# OpenDiablo2
+# OpenDiablo2 (Axiomatic BaalAal Edition)
 
 ![CircleCI](https://img.shields.io/circleci/build/github/OpenDiablo2/OpenDiablo2/master)
 [![Go Report Card](https://goreportcard.com/badge/github.com/OpenDiablo2/OpenDiablo2)](https://goreportcard.com/report/github.com/OpenDiablo2/OpenDiablo2)
@@ -23,6 +23,15 @@ https://github.com/AbyssEngine/
 
 ----
 [OpenDiablo2](https://opendiablo2.com/) is an ARPG game engine in the same vein of the 2000's games, and supports playing Diablo 2.
+
+## 🐍 Axiomatic BaalAal Engine
+
+This project has transitioned from arbitrary JavaScript evaluation to the **Axiomatic BaalAal Engine**. This new architecture ensures:
+- **Deterministic State:** Using Kappa-space coordinates (1000-base integer scaling).
+- **Recursive Logic:** Implementing the BaalAal "self-eating snake" (Ouroboros) cycle system for resonance stability.
+- **Security:** Arbitrary code execution via `js` command is disabled in release builds and replaced by restricted axiomatic operations (`ax-*`).
+
+----
 
 The engine is written in Go and is cross platform.
 
