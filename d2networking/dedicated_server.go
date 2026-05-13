@@ -43,6 +43,9 @@ func StartDedicatedServer(
 	}
 
 	err = server.Start()
+
+	// Start the WebSocket gateway for mobile browser clients
+	server.StartWebSocket(6670)
 	if err != nil {
 		return err
 	}
