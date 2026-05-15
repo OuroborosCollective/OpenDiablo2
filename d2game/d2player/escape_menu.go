@@ -13,6 +13,11 @@ import (
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2ui"
 )
 
+var (
+	volumeLevels = []string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"}
+	biasLevels   = []string{"OFF", "LOW", "HIGH"}
+)
+
 type (
 	layoutID int
 	optionID int
@@ -71,6 +76,8 @@ func NewEscapeMenu(navigator d2interface.Navigator,
 	assetManager *d2asset.AssetManager,
 	l d2util.LogLevel,
 	keyMap *KeyMap,
+	bgmVolume float64,
+	sfxVolume float64,
 ) *EscapeMenu {
 	m := &EscapeMenu{
 		audioProvider: audioProvider,
@@ -79,6 +86,8 @@ func NewEscapeMenu(navigator d2interface.Navigator,
 		guiManager:    guiManager,
 		assetManager:  assetManager,
 		keyMap:        keyMap,
+		bgmVolume:     bgmVolume,
+		sfxVolume:     sfxVolume,
 	}
 
 	keyBindingMenu := NewKeyBindingMenu(assetManager, renderer, uiManager, guiManager, keyMap, l, m)
@@ -116,6 +125,9 @@ type EscapeMenu struct {
 	assetManager   *d2asset.AssetManager
 	keyMap         *KeyMap
 	keyBindingMenu *KeyBindingMenu
+
+	bgmVolume float64
+	sfxVolume float64
 
 	onCloseCb func()
 
@@ -174,6 +186,12 @@ type actionableElement interface {
 	GetOffset() (int, int)
 	Trigger()
 }
+
+const (
+	optionsLayoutIDString = "options"
+	saveLayoutIDString    = "save"
+	logPrefix             = "Escape Menu"
+)
 
 func (m *EscapeMenu) newMainLayout() *layout {
 	return m.wrapLayout(func(l *layout) {
@@ -373,6 +391,7 @@ func (m *EscapeMenu) addEnumLabel(l *layout, optID optionID, text string, values
 		current:           initialIndex,
 		playSound:         m.playSound,
 		updateValue:       m.onUpdateValue,
+		EscapeMenu:        m,
 	}
 
 	layout.SetMouseClickHandler(func(_ d2interface.MouseEvent) {
