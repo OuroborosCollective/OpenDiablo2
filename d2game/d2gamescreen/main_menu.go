@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"os/exec"
-	"runtime"
 	"strings"
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2hero"
