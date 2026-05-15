@@ -1,6 +1,7 @@
 package d2player
 
 import (
+	"strconv"
 	"time"
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2enum"
@@ -8,6 +9,7 @@ import (
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2resource"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2util"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2asset"
+	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2config"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2gui"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2ui"
 )
@@ -62,7 +64,8 @@ const (
 )
 
 // NewEscapeMenu creates a new escape menu
-func NewEscapeMenu(navigator d2interface.Navigator,
+func NewEscapeMenu(config *d2config.Configuration,
+	navigator d2interface.Navigator,
 	renderer d2interface.Renderer,
 	audioProvider d2interface.AudioProvider,
 	uiManager *d2ui.UIManager,
@@ -72,6 +75,7 @@ func NewEscapeMenu(navigator d2interface.Navigator,
 	keyMap *KeyMap,
 ) *EscapeMenu {
 	m := &EscapeMenu{
+		config:        config,
 		audioProvider: audioProvider,
 		renderer:      renderer,
 		navigator:     navigator,
@@ -113,6 +117,7 @@ type EscapeMenu struct {
 	navigator      d2interface.Navigator
 	guiManager     *d2gui.GuiManager
 	assetManager   *d2asset.AssetManager
+	config         *d2config.Configuration
 	keyMap         *KeyMap
 	keyBindingMenu *KeyBindingMenu
 
@@ -131,18 +136,9 @@ type layout struct {
 	isRaw              bool
 }
 
-func (l *layout) Trigger() {
-	// noop
-}
-
-type showLayoutLabel struct {
-	*d2gui.Label
-	target     layoutID
-	showLayout func(id layoutID)
-}
-
-func (l *showLayoutLabel) Trigger() {
-	l.showLayout(l.target)
+type actionableElement interface {
+	Trigger()
+	GetOffset() (int, int)
 }
 
 type enumLabel struct {
@@ -152,27 +148,32 @@ type enumLabel struct {
 	values            []string
 	current           int
 	playSound         func()
-	updateValue       func(optID optionID, value string)
-	*EscapeMenu
+	updateValue       func(optionID, string)
 }
 
-func (l *enumLabel) Trigger() {
-	l.playSound()
-	next := (l.current + 1) % len(l.values)
-	l.current = next
+func (e *enumLabel) Trigger() {
+	e.playSound()
+	e.current++
 
-	currentValue := l.values[l.current]
-	if err := l.textChangingLabel.SetText(currentValue); err != nil {
-		l.EscapeMenu.Errorf("could not change the label text to: %s", currentValue)
+	if e.current >= len(e.values) {
+		e.current = 0
 	}
 
-	l.updateValue(l.optionID, currentValue)
+	e.textChangingLabel.SetText(e.values[e.current])
+	e.updateValue(e.optionID, e.values[e.current])
 }
 
-type actionableElement interface {
-	GetOffset() (int, int)
-	Trigger()
+type showLayoutLabel struct {
+	*d2gui.Label
+	target     layoutID
+	showLayout func(layoutID)
 }
+
+func (s *showLayoutLabel) Trigger() {
+	s.showLayout(s.target)
+}
+
+const logPrefix = "EscapeMenu"
 
 func (m *EscapeMenu) newMainLayout() *layout {
 	return m.wrapLayout(func(l *layout) {
@@ -188,16 +189,17 @@ func (m *EscapeMenu) newOptionsLayout() *layout {
 		m.addBigSelectionLabel(l, "VIDEO OPTIONS", videoOptionsLayoutID)
 		m.addBigSelectionLabel(l, "AUTOMAP OPTIONS", automapOptionsLayoutID)
 		m.addBigSelectionLabel(l, "CONFIGURE CONTROLS", configureControlsLayoutID)
-		m.addBigSelectionLabel(l, "PREVIOUS MENU", mainLayoutID)
+
+		m.addPreviousMenuLabel(l)
 	})
 }
 
 func (m *EscapeMenu) newSoundOptionsLayout() *layout {
 	return m.wrapLayout(func(l *layout) {
 		m.addTitle(l, "SOUND OPTIONS")
-		m.addEnumLabel(l, optAudioSoundVolume, "SOUND", []string{"TODO"})
-		m.addEnumLabel(l, optAudioMusicVolume, "MUSIC", []string{"TODO"})
-		m.addEnumLabel(l, optAudio3dSound, "3D BIAS", []string{"TODO"})
+		m.addEnumLabel(l, optAudioSoundVolume, "SOUND", getEnumRange(0, 10))
+		m.addEnumLabel(l, optAudioMusicVolume, "MUSIC", getEnumRange(0, 10))
+		m.addEnumLabel(l, optAudio3dSound, "3D BIAS", getEnumRange(0, 10))
 		m.addEnumLabel(l, optAudioHardwareAcceleration, "HARDWARE ACCELERATION", []string{"ON", "OFF"})
 		m.addEnumLabel(l, optAudioEnvEffects, "ENVIRONMENTAL EFFECTS", []string{"ON", "OFF"})
 		m.addEnumLabel(l, optAudioNpcSpeech, "NPC SPEECH", []string{"AUDIO AND TEXT", "AUDIO ONLY", "TEXT ONLY"})
@@ -212,8 +214,8 @@ func (m *EscapeMenu) newVideoOptionsLayout() *layout {
 		m.addEnumLabel(l, optVideoLightingQuality, "LIGHTING QUALITY", []string{"LOW", "HIGH"})
 		m.addEnumLabel(l, optVideoBlendedShadows, "BLENDED SHADOWS", []string{"ON", "OFF"})
 		m.addEnumLabel(l, optVideoPerspective, "PERSPECTIVE", []string{"ON", "OFF"})
-		m.addEnumLabel(l, optVideoGamma, "GAMMA", []string{"TODO"})
-		m.addEnumLabel(l, optVideoContrast, "CONTRAST", []string{"TODO"})
+		m.addEnumLabel(l, optVideoGamma, "GAMMA", getEnumRange(1, 10))
+		m.addEnumLabel(l, optVideoContrast, "CONTRAST", getEnumRange(1, 10))
 		m.addPreviousMenuLabel(l)
 	})
 }
@@ -221,8 +223,8 @@ func (m *EscapeMenu) newVideoOptionsLayout() *layout {
 func (m *EscapeMenu) newAutomapOptionsLayout() *layout {
 	return m.wrapLayout(func(l *layout) {
 		m.addTitle(l, "AUTOMAP OPTIONS")
-		m.addEnumLabel(l, optAutomapSize, "AUTOMAP SIZE", []string{"FULL SCREEN"})
-		m.addEnumLabel(l, optAutomapFade, "FADE", []string{"YES", "NO"})
+		m.addEnumLabel(l, optAutomapSize, "AUTOMAP SIZE", []string{"MINIMAP", "FULLSCREEN"})
+		m.addEnumLabel(l, optAutomapFade, "AUTOMAP FADE", []string{"YES", "NO"})
 		m.addEnumLabel(l, optAutomapCenterWhenCleared, "CENTER WHEN CLEARED", []string{"YES", "NO"})
 		m.addEnumLabel(l, optAutomapShowParty, "SHOW PARTY", []string{"YES", "NO"})
 		m.addEnumLabel(l, optAutomapShowNames, "SHOW NAMES", []string{"YES", "NO"})
@@ -356,7 +358,8 @@ func (m *EscapeMenu) addEnumLabel(l *layout, optID optionID, text string, values
 
 	layout.AddSpacerDynamic()
 
-	guiLabel, err := layout.AddLabel(values[0], d2gui.FontStyle30Units)
+	initial := m.getInitialValue(optID, values)
+	guiLabel, err := layout.AddLabel(values[initial], d2gui.FontStyle30Units)
 	if err != nil {
 		m.Error(err.Error())
 	}
@@ -366,7 +369,7 @@ func (m *EscapeMenu) addEnumLabel(l *layout, optID optionID, text string, values
 		textChangingLabel: guiLabel,
 		optionID:          optID,
 		values:            values,
-		current:           0,
+		current:           initial,
 		playSound:         m.playSound,
 		updateValue:       m.onUpdateValue,
 	}
@@ -465,6 +468,25 @@ func (m *EscapeMenu) onHoverElement(id int) {
 
 func (m *EscapeMenu) onUpdateValue(optID optionID, value string) {
 	m.Infof("updating value %d with %s", optID, value)
+
+	intVal, _ := strconv.Atoi(value)
+
+	switch optID {
+	case optAudioSoundVolume:
+		m.config.SfxVolume = float64(intVal) / 10.0
+		m.audioProvider.SetVolumes(m.config.BgmVolume, m.config.SfxVolume)
+	case optAudioMusicVolume:
+		m.config.BgmVolume = float64(intVal) / 10.0
+		m.audioProvider.SetVolumes(m.config.BgmVolume, m.config.SfxVolume)
+	case optVideoGamma:
+		m.config.Gamma = float64(intVal)
+	case optVideoContrast:
+		m.config.Contrast = float64(intVal)
+	}
+
+	if err := m.config.Save(); err != nil {
+		m.Errorf("unable to save config: %v", err)
+	}
 }
 
 func (m *EscapeMenu) setLayout(id layoutID) {
@@ -626,4 +648,36 @@ func (m *EscapeMenu) OnKeyDown(event d2interface.KeyEvent) bool {
 	}
 
 	return true
+}
+
+func getEnumRange(min, max int) []string {
+	res := make([]string, 0, max-min+1)
+	for i := min; i <= max; i++ {
+		res = append(res, strconv.Itoa(i))
+	}
+	return res
+}
+
+func (m *EscapeMenu) getInitialValue(optID optionID, values []string) int {
+	var val float64
+	switch optID {
+	case optAudioSoundVolume:
+		val = m.config.SfxVolume * 10
+	case optAudioMusicVolume:
+		val = m.config.BgmVolume * 10
+	case optVideoGamma:
+		val = m.config.Gamma
+	case optVideoContrast:
+		val = m.config.Contrast
+	default:
+		return 0
+	}
+
+	strVal := strconv.Itoa(int(val))
+	for i, v := range values {
+		if v == strVal {
+			return i
+		}
+	}
+	return 0
 }

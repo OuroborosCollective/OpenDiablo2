@@ -75,7 +75,7 @@ func CreateGame(
 		ticksSinceLevelCheck: 0,
 		mapRenderer: d2maprenderer.CreateMapRenderer(asset, renderer,
 			gameClient.MapEngine, term, l, startX, startY),
-		escapeMenu:    d2player.NewEscapeMenu(navigator, renderer, audioProvider, ui, guiManager, asset, l, keyMap),
+		escapeMenu:    d2player.NewEscapeMenu(navigator.Config(), navigator, renderer, audioProvider, ui, guiManager, asset, l, keyMap),
 		inputManager:  inputManager,
 		audioProvider: audioProvider,
 		renderer:      renderer,
