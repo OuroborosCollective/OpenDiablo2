@@ -17,6 +17,8 @@ type Configuration struct {
 	FullScreen      bool
 	RunInBackground bool
 	VsyncEnabled    bool
+	Gamma           float64
+	Contrast        float64
 	Backend         string
 	path            string
 }

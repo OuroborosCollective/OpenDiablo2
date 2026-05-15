@@ -1,6 +1,7 @@
 package d2interface
 
 import (
+	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2config"
 	"github.com/OpenDiablo2/OpenDiablo2/d2networking/d2client/d2clientconnectiontype"
 )
 
@@ -13,4 +14,5 @@ type Navigator interface {
 	ToMapEngineTest(region int, level int)
 	ToCredits()
 	ToCinematics()
+	Config() *d2config.Configuration
 }

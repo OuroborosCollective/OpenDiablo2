@@ -11,6 +11,8 @@ func DefaultConfig() *Configuration {
 	const (
 		defaultSfxVolume = 1.0
 		defaultBgmVolume = 0.3
+		defaultGamma     = 1.0
+		defaultContrast  = 1.0
 	)
 
 	config := &Configuration{
@@ -20,6 +22,8 @@ func DefaultConfig() *Configuration {
 		VsyncEnabled:    true,
 		SfxVolume:       defaultSfxVolume,
 		BgmVolume:       defaultBgmVolume,
+		Gamma:           defaultGamma,
+		Contrast:        defaultContrast,
 		MpqPath:         "C:/Program Files (x86)/Diablo II",
 		Backend:         "Ebiten",
 		MpqLoadOrder: []string{
