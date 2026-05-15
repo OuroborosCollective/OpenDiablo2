@@ -1,16 +1,16 @@
 # NOTE 
 <image align="left" src="https://user-images.githubusercontent.com/242652/138285004-b27d55b3-163b-4fe3-a8ff-6c34518044bd.png">
-This project is currently being split into an Engine+Toolset (called Abyss Engine) and the game as a project (still called OpenDiablo 2). The new project repo is located here:
+This project is currently being split into an Deterministic Logical-Engine+Framework (called ARE-Engine) and the game as a project (still called AREDiablo2-BaalAal).
 <br /><br />
-https://github.com/AbyssEngine/
+
 
 <br clear="all" />
 
-# OpenDiablo2
+# Diablo2 (Axiomatic BaalAal Edition)
 
 ![CircleCI](https://img.shields.io/circleci/build/github/OpenDiablo2/OpenDiablo2/master)
 [![Go Report Card](https://goreportcard.com/badge/github.com/OpenDiablo2/OpenDiablo2)](https://goreportcard.com/report/github.com/OpenDiablo2/OpenDiablo2)
-[![GoDoc](https://pkg.go.dev/badge/github.com/OpenDiablo2/OpenDiablo2?utm_source=godoc)](https://pkg.go.dev/mod/github.com/OpenDiablo2/OpenDiablo2)
+[![GoDoc](
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Discord](https://img.shields.io/discord/515518620034662421?label=Discord&style=social)](https://discord.gg/pRy8tdc)
 [![Twitch Status](https://img.shields.io/twitch/status/essial?style=social)](https://www.twitch.tv/essial)
@@ -19,10 +19,19 @@ https://github.com/AbyssEngine/
 
 ![Logo](d2logo.png)
 
-[![Patreon](https://img.shields.io/badge/dynamic/json?color=%23e85b46&label=Support%20us%20on%20Patreon&query=data.attributes.patron_count&suffix=%20patrons&url=https://www.patreon.com/api/campaigns/4762180)](https://www.patreon.com/bePatron?u=37261055)
+[![Patreon](https://img.shields.io/badge/dynamic/json?color=%23e85b46&label=Support%20us%20on%20Patreon&query=data.attributes.patron_count&suffix=%20patrons&url=https://www.patreon.com/api/campaigns/4762180)](
 
 ----
-[OpenDiablo2](https://opendiablo2.com/) is an ARPG game engine in the same vein of the 2000's games, and supports playing Diablo 2.
+[Diablo2](https://diablo2.com/) is an ARPG game engine in the same vein of the 2000's games, and supports playing Diablo 2.
+
+## 🐍 Axiomatic BaalAal Engine
+
+This project has transitioned from arbitrary JavaScript evaluation to the **Axiomatic BaalAal Engine**. This new architecture ensures:
+- **Deterministic State:** Using Kappa-space coordinates (1000-base integer scaling).
+- **Recursive Logic:** Implementing the BaalAal "self-eating snake" (Ouroboros) cycle system for resonance stability.
+- **Security:** Arbitrary code execution via `js` command is disabled in release builds and replaced by restricted axiomatic operations (`ax-*`).
+
+----
 
 The engine is written in Go and is cross platform.
 

@@ -121,6 +121,15 @@ func (eap *AudioProvider) LoadSound(sfx string, loop, bgm bool) (d2interface.Sou
 func (eap *AudioProvider) SetVolumes(bgmVolume, sfxVolume float64) {
 	eap.sfxVolume = sfxVolume
 	eap.bgmVolume = bgmVolume
+
+	if eap.bgmAudio != nil {
+		eap.bgmAudio.SetVolume(bgmVolume)
+	}
+}
+
+// GetVolumes returns the current volume levels
+func (eap *AudioProvider) GetVolumes() (bgmVolume, sfxVolume float64) {
+	return eap.bgmVolume, eap.sfxVolume
 }
 
 // createSoundEffect creates a new instance of ebiten's sound effect implementation.

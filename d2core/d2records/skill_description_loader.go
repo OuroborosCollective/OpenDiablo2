@@ -21,17 +21,11 @@ func skillDescriptionLoader(r *RecordManager, d *d2txt.DataDictionary) error {
 	parser := d2parser.New()
 
 	for d.Next() {
-		descName := d.String("skilldesc")
-
-		skillName, ok := descToSkill[descName]
-		if !ok {
-			skillName = descName
-		}
-
-		parser.SetCurrentReference("skill", skillName)
+		name := d.String("skilldesc")
+		parser.SetCurrentReference("skill", name)
 
 		record := &SkillDescriptionRecord{
-			descName,
+			name,
 			d.Number("SkillPage"),
 			d.Number("SkillRow"),
 			d.Number("SkillColumn"),
