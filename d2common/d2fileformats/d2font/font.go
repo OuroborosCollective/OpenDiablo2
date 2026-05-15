@@ -16,10 +16,10 @@ const (
 )
 
 const (
-	numHeaderBytes          = 12
+	numHeaderBytes          = 13
 	bytesPerGlyph           = 14
 	signatureBytesCount     = 5
-	unknownHeaderBytesCount = 7
+	unknownHeaderBytesCount = 8
 	unknown1BytesCount      = 1
 	unknown2BytesCount      = 3
 	unknown3BytesCount      = 4

@@ -441,7 +441,23 @@ func (v *MainMenu) onSinglePlayerClicked() {
 func (v *MainMenu) onGithubButtonClicked() {
 	url := "https://www.github.com/OpenDiablo2/OpenDiablo2"
 
-	err := d2util.OpenURL(url)
+	if !d2util.IsValidBrowserURL(url) {
+		v.Error(fmt.Sprintf("invalid URL: %s", url))
+		return
+	}
+
+	var err error
+
+	switch runtime.GOOS {
+	case "linux":
+		err = exec.Command("xdg-open", url).Start()
+	case "windows":
+		err = exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
+	case "darwin":
+		err = exec.Command("open", url).Start()
+	default:
+		err = fmt.Errorf("unsupported platform")
+	}
 
 	if err != nil {
 		v.Error(err.Error())

@@ -1,6 +1,7 @@
 package d2player
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2enum"
@@ -8,8 +9,14 @@ import (
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2resource"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2util"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2asset"
+	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2config"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2gui"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2ui"
+)
+
+var (
+	volumeLevels = []string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"}
+	biasLevels   = []string{"OFF", "LOW", "HIGH"}
 )
 
 type (
@@ -62,7 +69,8 @@ const (
 )
 
 // NewEscapeMenu creates a new escape menu
-func NewEscapeMenu(navigator d2interface.Navigator,
+func NewEscapeMenu(config *d2config.Configuration,
+	navigator d2interface.Navigator,
 	renderer d2interface.Renderer,
 	audioProvider d2interface.AudioProvider,
 	uiManager *d2ui.UIManager,
@@ -70,14 +78,19 @@ func NewEscapeMenu(navigator d2interface.Navigator,
 	assetManager *d2asset.AssetManager,
 	l d2util.LogLevel,
 	keyMap *KeyMap,
+	bgmVolume float64,
+	sfxVolume float64,
 ) *EscapeMenu {
 	m := &EscapeMenu{
+		config:        config,
 		audioProvider: audioProvider,
 		renderer:      renderer,
 		navigator:     navigator,
 		guiManager:    guiManager,
 		assetManager:  assetManager,
 		keyMap:        keyMap,
+		bgmVolume:     bgmVolume,
+		sfxVolume:     sfxVolume,
 	}
 
 	keyBindingMenu := NewKeyBindingMenu(assetManager, renderer, uiManager, guiManager, keyMap, l, m)
@@ -113,8 +126,12 @@ type EscapeMenu struct {
 	navigator      d2interface.Navigator
 	guiManager     *d2gui.GuiManager
 	assetManager   *d2asset.AssetManager
+	config         *d2config.Configuration
 	keyMap         *KeyMap
 	keyBindingMenu *KeyBindingMenu
+
+	bgmVolume float64
+	sfxVolume float64
 
 	onCloseCb func()
 
@@ -131,18 +148,9 @@ type layout struct {
 	isRaw              bool
 }
 
-func (l *layout) Trigger() {
-	// noop
-}
-
-type showLayoutLabel struct {
-	*d2gui.Label
-	target     layoutID
-	showLayout func(id layoutID)
-}
-
-func (l *showLayoutLabel) Trigger() {
-	l.showLayout(l.target)
+type actionableElement interface {
+	Trigger()
+	GetOffset() (int, int)
 }
 
 type enumLabel struct {
@@ -152,27 +160,36 @@ type enumLabel struct {
 	values            []string
 	current           int
 	playSound         func()
-	updateValue       func(optID optionID, value string)
-	*EscapeMenu
+	updateValue       func(optionID, string)
 }
 
-func (l *enumLabel) Trigger() {
-	l.playSound()
-	next := (l.current + 1) % len(l.values)
-	l.current = next
+func (e *enumLabel) Trigger() {
+	e.playSound()
+	e.current++
 
-	currentValue := l.values[l.current]
-	if err := l.textChangingLabel.SetText(currentValue); err != nil {
-		l.EscapeMenu.Errorf("could not change the label text to: %s", currentValue)
+	if e.current >= len(e.values) {
+		e.current = 0
 	}
 
-	l.updateValue(l.optionID, currentValue)
+	e.textChangingLabel.SetText(e.values[e.current])
+	e.updateValue(e.optionID, e.values[e.current])
 }
 
-type actionableElement interface {
-	GetOffset() (int, int)
-	Trigger()
+type showLayoutLabel struct {
+	*d2gui.Label
+	target     layoutID
+	showLayout func(layoutID)
 }
+
+func (s *showLayoutLabel) Trigger() {
+	s.showLayout(s.target)
+}
+
+const (
+	optionsLayoutIDString = "options"
+	saveLayoutIDString    = "save"
+	logPrefix             = "Escape Menu"
+)
 
 func (m *EscapeMenu) newMainLayout() *layout {
 	return m.wrapLayout(func(l *layout) {
@@ -188,19 +205,23 @@ func (m *EscapeMenu) newOptionsLayout() *layout {
 		m.addBigSelectionLabel(l, "VIDEO OPTIONS", videoOptionsLayoutID)
 		m.addBigSelectionLabel(l, "AUTOMAP OPTIONS", automapOptionsLayoutID)
 		m.addBigSelectionLabel(l, "CONFIGURE CONTROLS", configureControlsLayoutID)
-		m.addBigSelectionLabel(l, "PREVIOUS MENU", mainLayoutID)
+
+		m.addPreviousMenuLabel(l)
 	})
 }
 
 func (m *EscapeMenu) newSoundOptionsLayout() *layout {
 	return m.wrapLayout(func(l *layout) {
+		bgm, sfx := m.audioProvider.GetVolumes()
+		volumeStrings := []string{"0%", "10%", "20%", "30%", "40%", "50%", "60%", "70%", "80%", "90%", "100%"}
+
 		m.addTitle(l, "SOUND OPTIONS")
-		m.addEnumLabel(l, optAudioSoundVolume, "SOUND", []string{"TODO"})
-		m.addEnumLabel(l, optAudioMusicVolume, "MUSIC", []string{"TODO"})
-		m.addEnumLabel(l, optAudio3dSound, "3D BIAS", []string{"TODO"})
-		m.addEnumLabel(l, optAudioHardwareAcceleration, "HARDWARE ACCELERATION", []string{"ON", "OFF"})
-		m.addEnumLabel(l, optAudioEnvEffects, "ENVIRONMENTAL EFFECTS", []string{"ON", "OFF"})
-		m.addEnumLabel(l, optAudioNpcSpeech, "NPC SPEECH", []string{"AUDIO AND TEXT", "AUDIO ONLY", "TEXT ONLY"})
+		m.addEnumLabel(l, optAudioSoundVolume, "SOUND", volumeStrings, int(sfx*10))
+		m.addEnumLabel(l, optAudioMusicVolume, "MUSIC", volumeStrings, int(bgm*10))
+		m.addEnumLabel(l, optAudio3dSound, "3D BIAS", []string{"OFF", "LOW", "HIGH"}, 0)
+		m.addEnumLabel(l, optAudioHardwareAcceleration, "HARDWARE ACCELERATION", []string{"ON", "OFF"}, 0)
+		m.addEnumLabel(l, optAudioEnvEffects, "ENVIRONMENTAL EFFECTS", []string{"ON", "OFF"}, 0)
+		m.addEnumLabel(l, optAudioNpcSpeech, "NPC SPEECH", []string{"AUDIO AND TEXT", "AUDIO ONLY", "TEXT ONLY"}, 0)
 		m.addPreviousMenuLabel(l)
 	})
 }
@@ -208,12 +229,12 @@ func (m *EscapeMenu) newSoundOptionsLayout() *layout {
 func (m *EscapeMenu) newVideoOptionsLayout() *layout {
 	return m.wrapLayout(func(l *layout) {
 		m.addTitle(l, "VIDEO OPTIONS")
-		m.addEnumLabel(l, optVideoResolution, "VIDEO RESOLUTION", []string{"800X600", "1024X768"})
-		m.addEnumLabel(l, optVideoLightingQuality, "LIGHTING QUALITY", []string{"LOW", "HIGH"})
-		m.addEnumLabel(l, optVideoBlendedShadows, "BLENDED SHADOWS", []string{"ON", "OFF"})
-		m.addEnumLabel(l, optVideoPerspective, "PERSPECTIVE", []string{"ON", "OFF"})
-		m.addEnumLabel(l, optVideoGamma, "GAMMA", []string{"TODO"})
-		m.addEnumLabel(l, optVideoContrast, "CONTRAST", []string{"TODO"})
+		m.addEnumLabel(l, optVideoResolution, "VIDEO RESOLUTION", []string{"800X600", "1024X768"}, 0)
+		m.addEnumLabel(l, optVideoLightingQuality, "LIGHTING QUALITY", []string{"LOW", "HIGH"}, 1)
+		m.addEnumLabel(l, optVideoBlendedShadows, "BLENDED SHADOWS", []string{"ON", "OFF"}, 0)
+		m.addEnumLabel(l, optVideoPerspective, "PERSPECTIVE", []string{"ON", "OFF"}, 0)
+		m.addEnumLabel(l, optVideoGamma, "GAMMA", []string{"0", "1", "2", "3", "4", "5"}, 0)
+		m.addEnumLabel(l, optVideoContrast, "CONTRAST", []string{"0", "1", "2", "3", "4", "5"}, 0)
 		m.addPreviousMenuLabel(l)
 	})
 }
@@ -221,11 +242,11 @@ func (m *EscapeMenu) newVideoOptionsLayout() *layout {
 func (m *EscapeMenu) newAutomapOptionsLayout() *layout {
 	return m.wrapLayout(func(l *layout) {
 		m.addTitle(l, "AUTOMAP OPTIONS")
-		m.addEnumLabel(l, optAutomapSize, "AUTOMAP SIZE", []string{"FULL SCREEN"})
-		m.addEnumLabel(l, optAutomapFade, "FADE", []string{"YES", "NO"})
-		m.addEnumLabel(l, optAutomapCenterWhenCleared, "CENTER WHEN CLEARED", []string{"YES", "NO"})
-		m.addEnumLabel(l, optAutomapShowParty, "SHOW PARTY", []string{"YES", "NO"})
-		m.addEnumLabel(l, optAutomapShowNames, "SHOW NAMES", []string{"YES", "NO"})
+		m.addEnumLabel(l, optAutomapSize, "AUTOMAP SIZE", []string{"FULL SCREEN"}, 0)
+		m.addEnumLabel(l, optAutomapFade, "FADE", []string{"YES", "NO"}, 0)
+		m.addEnumLabel(l, optAutomapCenterWhenCleared, "CENTER WHEN CLEARED", []string{"YES", "NO"}, 0)
+		m.addEnumLabel(l, optAutomapShowParty, "SHOW PARTY", []string{"YES", "NO"}, 0)
+		m.addEnumLabel(l, optAutomapShowNames, "SHOW NAMES", []string{"YES", "NO"}, 0)
 		m.addPreviousMenuLabel(l)
 	})
 }
@@ -338,7 +359,7 @@ func (m *EscapeMenu) addPreviousMenuLabel(l *layout) {
 	l.actionableElements = append(l.actionableElements, label)
 }
 
-func (m *EscapeMenu) addEnumLabel(l *layout, optID optionID, text string, values []string) {
+func (m *EscapeMenu) addEnumLabel(l *layout, optID optionID, text string, values []string, initialIndex int) {
 	guiLayout := l.AddLayout(d2gui.PositionTypeHorizontal)
 	layout := &layout{Layout: guiLayout}
 	layout.SetSize(menuSize, 0)
@@ -356,7 +377,7 @@ func (m *EscapeMenu) addEnumLabel(l *layout, optID optionID, text string, values
 
 	layout.AddSpacerDynamic()
 
-	guiLabel, err := layout.AddLabel(values[0], d2gui.FontStyle30Units)
+	guiLabel, err := layout.AddLabel(values[initialIndex], d2gui.FontStyle30Units)
 	if err != nil {
 		m.Error(err.Error())
 	}
@@ -366,9 +387,10 @@ func (m *EscapeMenu) addEnumLabel(l *layout, optID optionID, text string, values
 		textChangingLabel: guiLabel,
 		optionID:          optID,
 		values:            values,
-		current:           0,
+		current:           initialIndex,
 		playSound:         m.playSound,
 		updateValue:       m.onUpdateValue,
+		EscapeMenu:        m,
 	}
 
 	layout.SetMouseClickHandler(func(_ d2interface.MouseEvent) {
@@ -465,6 +487,25 @@ func (m *EscapeMenu) onHoverElement(id int) {
 
 func (m *EscapeMenu) onUpdateValue(optID optionID, value string) {
 	m.Infof("updating value %d with %s", optID, value)
+
+	switch optID {
+	case optAudioMusicVolume, optAudioSoundVolume:
+		bgm, sfx := m.audioProvider.GetVolumes()
+
+		// value is in format "XX%"
+		var volume float64
+		if _, err := fmt.Sscanf(value, "%f%%", &volume); err == nil {
+			volume /= 100.0
+
+			if optID == optAudioMusicVolume {
+				bgm = volume
+			} else {
+				sfx = volume
+			}
+
+			m.audioProvider.SetVolumes(bgm, sfx)
+		}
+	}
 }
 
 func (m *EscapeMenu) setLayout(id layoutID) {
@@ -626,4 +667,36 @@ func (m *EscapeMenu) OnKeyDown(event d2interface.KeyEvent) bool {
 	}
 
 	return true
+}
+
+func getEnumRange(min, max int) []string {
+	res := make([]string, 0, max-min+1)
+	for i := min; i <= max; i++ {
+		res = append(res, strconv.Itoa(i))
+	}
+	return res
+}
+
+func (m *EscapeMenu) getInitialValue(optID optionID, values []string) int {
+	var val float64
+	switch optID {
+	case optAudioSoundVolume:
+		val = m.config.SfxVolume * 10
+	case optAudioMusicVolume:
+		val = m.config.BgmVolume * 10
+	case optVideoGamma:
+		val = m.config.Gamma
+	case optVideoContrast:
+		val = m.config.Contrast
+	default:
+		return 0
+	}
+
+	strVal := strconv.Itoa(int(val))
+	for i, v := range values {
+		if v == strVal {
+			return i
+		}
+	}
+	return 0
 }

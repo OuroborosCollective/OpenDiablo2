@@ -382,6 +382,8 @@ func (a *App) renderCapture(target d2interface.Surface) error {
 }
 
 func (a *App) render(target d2interface.Surface) {
+	a.applyGammaContrast(target)
+	defer target.PopN(2)
 	a.screen.Render(target)
 	a.ui.Render(target)
 
@@ -635,7 +637,7 @@ func (a *App) ToCreateGame(filePath string, connType d2clientconnectiontype.Clie
 		a.ToMainMenu(errorMessage)
 	} else {
 		game, err := d2gamescreen.CreateGame(
-			a, a.asset, a.ui, a.renderer, a.inputManager, a.audio, gameClient, a.terminal, *a.Options.LogLevel, a.guiManager,
+			a, a.asset, a.ui, a.renderer, a.inputManager, a.audio, gameClient, a.terminal, *a.Options.LogLevel, a.guiManager, a.config.BgmVolume, a.config.SfxVolume,
 		)
 		if err != nil {
 			a.Error(err.Error())
@@ -676,4 +678,22 @@ func (a *App) ToCredits() {
 // ToCinematics forces the game to transition to the cinematics menu
 func (a *App) ToCinematics() {
 	a.screen.SetNextScreen(d2gamescreen.CreateCinematics(a, a.asset, a.renderer, a.audio, *a.Options.LogLevel, a.ui))
+}
+
+// Config returns the app configuration
+func (a *App) Config() *d2config.Configuration {
+	return a.config
+}
+
+func (a *App) applyGammaContrast(target d2interface.Surface) {
+	// Gamma in D2 usually means brightness.
+	// In OpenDiablo2, PushBrightness(1.0) is neutral.
+	// We'll map our 1-10 range to 0.5 - 1.5 brightness for now.
+	brightness := 0.5 + (a.config.Gamma-1.0)*0.1
+	target.PushBrightness(brightness)
+
+	// We'll use Saturation as a proxy for Contrast for now since Contrast isn't in the interface.
+	// Mapping 1-10 to 0.5 - 1.5 saturation.
+	contrast := 0.5 + (a.config.Contrast-1.0)*0.1
+	target.PushSaturation(contrast)
 }
