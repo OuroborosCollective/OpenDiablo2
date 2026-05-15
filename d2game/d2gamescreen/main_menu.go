@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"os/exec"
-	"runtime"
 	"strings"
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2hero"
@@ -443,18 +441,7 @@ func (v *MainMenu) onSinglePlayerClicked() {
 func (v *MainMenu) onGithubButtonClicked() {
 	url := "https://www.github.com/OpenDiablo2/OpenDiablo2"
 
-	var err error
-
-	switch runtime.GOOS {
-	case "linux":
-		err = exec.Command("xdg-open", url).Start()
-	case "windows":
-		err = exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
-	case "darwin":
-		err = exec.Command("open", url).Start()
-	default:
-		err = fmt.Errorf("unsupported platform")
-	}
+	err := d2util.OpenURL(url)
 
 	if err != nil {
 		v.Error(err.Error())
