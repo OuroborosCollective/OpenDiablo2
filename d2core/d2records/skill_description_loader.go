@@ -11,11 +11,13 @@ func skillDescriptionLoader(r *RecordManager, d *d2txt.DataDictionary) error {
 	records := make(map[string]*SkillDescriptionRecord)
 
 	parser := d2parser.New()
-	parser.SetCurrentReference("skill", "TODO: connect skill with description!")
 
 	for d.Next() {
+		name := d.String("skilldesc")
+		parser.SetCurrentReference("skill", name)
+
 		record := &SkillDescriptionRecord{
-			d.String("skilldesc"),
+			name,
 			d.Number("SkillPage"),
 			d.Number("SkillRow"),
 			d.Number("SkillColumn"),
