@@ -324,18 +324,20 @@ func (g *GameServer) registerConnection(b []byte, conn net.Conn) (ClientConnecti
 //
 // For more information, see d2networking.d2netpacket.
 func (g *GameServer) OnClientConnected(client ClientConnection) {
-	// Temporary position hack --------------------------------------------
-	// https://github.com/OpenDiablo2/OpenDiablo2/issues/829
-	sx, sy := g.mapEngines[0].GetStartPosition()
-	clientPlayerState := client.GetPlayerState()
-	clientPlayerState.X = sx
-	clientPlayerState.Y = sy
-	// --------------------------------------------------------------------
+	playerState := client.GetPlayerState()
+	x, y := playerState.X, playerState.Y
+
+	// If the player has no saved position, use the default start position
+	if x == 0 && y == 0 {
+		x, y = g.mapEngines[0].GetStartPosition()
+		playerState.X = x
+		playerState.Y = y
+	}
 
 	g.Infof("Client connected with an id of %s", client.GetUniqueID())
 	g.connections[client.GetUniqueID()] = client
 
-	g.handleClientConnection(client, sx, sy)
+	g.handleClientConnection(client, x, y)
 }
 
 func (g *GameServer) handleClientConnection(client ClientConnection, x, y float64) {
@@ -349,7 +351,7 @@ func (g *GameServer) handleClientConnection(client ClientConnection, x, y float6
 		g.Errorf("GameServer: error sending UpdateServerInfoPacket to client %s: %s", client.GetUniqueID(), err)
 	}
 
-	gmp, err := d2netpacket.CreateGenerateMapPacket(d2enum.RegionAct1Town)
+	gmp, err := d2netpacket.CreateGenerateMapPacket(getTownRegionFromAct(client.GetPlayerState().Act))
 	if err != nil {
 		g.Errorf("GenerateMapPacket: %v", err)
 	}
@@ -493,4 +495,21 @@ func (g *GameServer) OnPacketReceived(client ClientConnection, packet d2netpacke
 	}
 
 	return nil
+}
+
+func getTownRegionFromAct(act int) d2enum.RegionIdType {
+	switch act {
+	case 1:
+		return d2enum.RegionAct1Town
+	case 2:
+		return d2enum.RegionAct2Town
+	case 3:
+		return d2enum.RegionAct3Town
+	case 4:
+		return d2enum.RegionAct4Town
+	case 5:
+		return d2enum.RegonAct5Town
+	default:
+		return d2enum.RegionAct1Town
+	}
 }
