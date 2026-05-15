@@ -126,9 +126,17 @@ func (v *Stream) readInternal(buffer []byte, offset, count uint32) (uint32, erro
 }
 
 func (v *Stream) copy(buffer []byte, offset, pos, count uint32) (uint32, error) {
+	if pos >= uint32(len(v.Data)) {
+		return 0, io.EOF
+	}
+
 	bytesToCopy := d2math.Min(uint32(len(v.Data))-pos, count)
 	if bytesToCopy <= 0 {
 		return 0, io.EOF
+	}
+
+	if offset+bytesToCopy > uint32(len(buffer)) {
+		bytesToCopy = uint32(len(buffer)) - offset
 	}
 
 	copy(buffer[offset:offset+bytesToCopy], v.Data[pos:pos+bytesToCopy])
@@ -186,6 +194,11 @@ func (v *Stream) loadBlock(blockIndex, expectedLength uint32) ([]byte, error) {
 			return []byte{}, errors.New("block index out of bounds")
 		}
 		offset = v.Positions[blockIndex]
+
+		if v.Positions[blockIndex+1] < offset {
+			return []byte{}, errors.New("invalid block offsets in MPQ")
+		}
+
 		toRead = v.Positions[blockIndex+1] - offset
 	} else {
 		offset = blockIndex * v.Size
@@ -211,16 +224,24 @@ func (v *Stream) loadBlock(blockIndex, expectedLength uint32) ([]byte, error) {
 		decryptBytes(data, blockIndex+v.Block.EncryptionSeed)
 	}
 
-	if v.Block.HasFlag(FileCompress) && (toRead != expectedLength) {
-		if !v.Block.HasFlag(FileSingleUnit) {
-			return decompressMulti(data, expectedLength)
+	if v.Block.HasFlag(FileCompress) {
+		if toRead != expectedLength {
+			if !v.Block.HasFlag(FileSingleUnit) {
+				return decompressMulti(data, expectedLength)
+			}
+
+			return pkDecompress(data)
 		}
 
-		return pkDecompress(data)
+		return data, nil
 	}
 
-	if v.Block.HasFlag(FileImplode) && (toRead != expectedLength) {
-		return pkDecompress(data)
+	if v.Block.HasFlag(FileImplode) {
+		if toRead != expectedLength {
+			return pkDecompress(data)
+		}
+
+		return data, nil
 	}
 
 	return data, nil

@@ -2,6 +2,7 @@ package d2player
 
 import (
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2enum"
@@ -105,7 +106,7 @@ func NewEscapeMenu(config *d2config.Configuration,
 
 	m.Logger = d2util.NewLogger()
 	m.Logger.SetLevel(l)
-	m.Logger.SetPrefix(logPrefix)
+	m.Logger.SetPrefix(escapeMenuLogPrefix)
 
 	return m
 }
@@ -161,6 +162,7 @@ type enumLabel struct {
 	current           int
 	playSound         func()
 	updateValue       func(optionID, string)
+	EscapeMenu        *EscapeMenu
 }
 
 func (e *enumLabel) Trigger() {
@@ -188,7 +190,7 @@ func (s *showLayoutLabel) Trigger() {
 const (
 	optionsLayoutIDString = "options"
 	saveLayoutIDString    = "save"
-	logPrefix             = "Escape Menu"
+	escapeMenuLogPrefix   = "Escape Menu"
 )
 
 func (m *EscapeMenu) newMainLayout() *layout {
