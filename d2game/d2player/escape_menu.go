@@ -2,7 +2,6 @@ package d2player
 
 import (
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2enum"
@@ -214,13 +213,16 @@ func (m *EscapeMenu) newOptionsLayout() *layout {
 
 func (m *EscapeMenu) newSoundOptionsLayout() *layout {
 	return m.wrapLayout(func(l *layout) {
+		bgm, sfx := m.audioProvider.GetVolumes()
+		volumeStrings := []string{"0%", "10%", "20%", "30%", "40%", "50%", "60%", "70%", "80%", "90%", "100%"}
+
 		m.addTitle(l, "SOUND OPTIONS")
-		m.addEnumLabel(l, optAudioSoundVolume, "SOUND", volumeLevels, fmt.Sprintf("%d", int(m.sfxVolume*10)))
-		m.addEnumLabel(l, optAudioMusicVolume, "MUSIC", volumeLevels, fmt.Sprintf("%d", int(m.bgmVolume*10)))
-		m.addEnumLabel(l, optAudio3dSound, "3D BIAS", biasLevels, biasLevels[0])
-		m.addEnumLabel(l, optAudioHardwareAcceleration, "HARDWARE ACCELERATION", []string{"ON", "OFF"}, "OFF")
-		m.addEnumLabel(l, optAudioEnvEffects, "ENVIRONMENTAL EFFECTS", []string{"ON", "OFF"}, "OFF")
-		m.addEnumLabel(l, optAudioNpcSpeech, "NPC SPEECH", []string{"AUDIO AND TEXT", "AUDIO ONLY", "TEXT ONLY"}, "AUDIO AND TEXT")
+		m.addEnumLabel(l, optAudioSoundVolume, "SOUND", volumeStrings, int(sfx*10))
+		m.addEnumLabel(l, optAudioMusicVolume, "MUSIC", volumeStrings, int(bgm*10))
+		m.addEnumLabel(l, optAudio3dSound, "3D BIAS", []string{"OFF", "LOW", "HIGH"}, 0)
+		m.addEnumLabel(l, optAudioHardwareAcceleration, "HARDWARE ACCELERATION", []string{"ON", "OFF"}, 0)
+		m.addEnumLabel(l, optAudioEnvEffects, "ENVIRONMENTAL EFFECTS", []string{"ON", "OFF"}, 0)
+		m.addEnumLabel(l, optAudioNpcSpeech, "NPC SPEECH", []string{"AUDIO AND TEXT", "AUDIO ONLY", "TEXT ONLY"}, 0)
 		m.addPreviousMenuLabel(l)
 	})
 }
@@ -228,12 +230,12 @@ func (m *EscapeMenu) newSoundOptionsLayout() *layout {
 func (m *EscapeMenu) newVideoOptionsLayout() *layout {
 	return m.wrapLayout(func(l *layout) {
 		m.addTitle(l, "VIDEO OPTIONS")
-		m.addEnumLabel(l, optVideoResolution, "VIDEO RESOLUTION", []string{"800X600", "1024X768"}, "800X600")
-		m.addEnumLabel(l, optVideoLightingQuality, "LIGHTING QUALITY", []string{"LOW", "HIGH"}, "HIGH")
-		m.addEnumLabel(l, optVideoBlendedShadows, "BLENDED SHADOWS", []string{"ON", "OFF"}, "ON")
-		m.addEnumLabel(l, optVideoPerspective, "PERSPECTIVE", []string{"ON", "OFF"}, "ON")
-		m.addEnumLabel(l, optVideoGamma, "GAMMA", volumeLevels, "5")
-		m.addEnumLabel(l, optVideoContrast, "CONTRAST", volumeLevels, "5")
+		m.addEnumLabel(l, optVideoResolution, "VIDEO RESOLUTION", []string{"800X600", "1024X768"}, 0)
+		m.addEnumLabel(l, optVideoLightingQuality, "LIGHTING QUALITY", []string{"LOW", "HIGH"}, 1)
+		m.addEnumLabel(l, optVideoBlendedShadows, "BLENDED SHADOWS", []string{"ON", "OFF"}, 0)
+		m.addEnumLabel(l, optVideoPerspective, "PERSPECTIVE", []string{"ON", "OFF"}, 0)
+		m.addEnumLabel(l, optVideoGamma, "GAMMA", []string{"0", "1", "2", "3", "4", "5"}, 0)
+		m.addEnumLabel(l, optVideoContrast, "CONTRAST", []string{"0", "1", "2", "3", "4", "5"}, 0)
 		m.addPreviousMenuLabel(l)
 	})
 }
@@ -241,11 +243,11 @@ func (m *EscapeMenu) newVideoOptionsLayout() *layout {
 func (m *EscapeMenu) newAutomapOptionsLayout() *layout {
 	return m.wrapLayout(func(l *layout) {
 		m.addTitle(l, "AUTOMAP OPTIONS")
-		m.addEnumLabel(l, optAutomapSize, "AUTOMAP SIZE", []string{"FULL SCREEN"}, "FULL SCREEN")
-		m.addEnumLabel(l, optAutomapFade, "FADE", []string{"YES", "NO"}, "YES")
-		m.addEnumLabel(l, optAutomapCenterWhenCleared, "CENTER WHEN CLEARED", []string{"YES", "NO"}, "YES")
-		m.addEnumLabel(l, optAutomapShowParty, "SHOW PARTY", []string{"YES", "NO"}, "YES")
-		m.addEnumLabel(l, optAutomapShowNames, "SHOW NAMES", []string{"YES", "NO"}, "YES")
+		m.addEnumLabel(l, optAutomapSize, "AUTOMAP SIZE", []string{"FULL SCREEN"}, 0)
+		m.addEnumLabel(l, optAutomapFade, "FADE", []string{"YES", "NO"}, 0)
+		m.addEnumLabel(l, optAutomapCenterWhenCleared, "CENTER WHEN CLEARED", []string{"YES", "NO"}, 0)
+		m.addEnumLabel(l, optAutomapShowParty, "SHOW PARTY", []string{"YES", "NO"}, 0)
+		m.addEnumLabel(l, optAutomapShowNames, "SHOW NAMES", []string{"YES", "NO"}, 0)
 		m.addPreviousMenuLabel(l)
 	})
 }
@@ -358,7 +360,7 @@ func (m *EscapeMenu) addPreviousMenuLabel(l *layout) {
 	l.actionableElements = append(l.actionableElements, label)
 }
 
-func (m *EscapeMenu) addEnumLabel(l *layout, optID optionID, text string, values []string, initialValue string) {
+func (m *EscapeMenu) addEnumLabel(l *layout, optID optionID, text string, values []string, initialIndex int) {
 	guiLayout := l.AddLayout(d2gui.PositionTypeHorizontal)
 	layout := &layout{Layout: guiLayout}
 	layout.SetSize(menuSize, 0)
@@ -375,14 +377,6 @@ func (m *EscapeMenu) addEnumLabel(l *layout, optID optionID, text string, values
 	})
 
 	layout.AddSpacerDynamic()
-
-	initialIndex := 0
-	for i, v := range values {
-		if v == initialValue {
-			initialIndex = i
-			break
-		}
-	}
 
 	guiLabel, err := layout.AddLabel(values[initialIndex], d2gui.FontStyle30Units)
 	if err != nil {
@@ -496,17 +490,21 @@ func (m *EscapeMenu) onUpdateValue(optID optionID, value string) {
 	m.Infof("updating value %d with %s", optID, value)
 
 	switch optID {
-	case optAudioSoundVolume:
-		vol, err := strconv.ParseFloat(value, 64)
-		if err == nil {
-			m.sfxVolume = vol / 10.0
-			m.audioProvider.SetVolumes(m.bgmVolume, m.sfxVolume)
-		}
-	case optAudioMusicVolume:
-		vol, err := strconv.ParseFloat(value, 64)
-		if err == nil {
-			m.bgmVolume = vol / 10.0
-			m.audioProvider.SetVolumes(m.bgmVolume, m.sfxVolume)
+	case optAudioMusicVolume, optAudioSoundVolume:
+		bgm, sfx := m.audioProvider.GetVolumes()
+
+		// value is in format "XX%"
+		var volume float64
+		if _, err := fmt.Sscanf(value, "%f%%", &volume); err == nil {
+			volume /= 100.0
+
+			if optID == optAudioMusicVolume {
+				bgm = volume
+			} else {
+				sfx = volume
+			}
+
+			m.audioProvider.SetVolumes(bgm, sfx)
 		}
 	}
 }
