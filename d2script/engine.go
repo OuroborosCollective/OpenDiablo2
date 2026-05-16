@@ -41,3 +41,8 @@ func (s *ScriptEngine) AllowEval() {
 func (s *ScriptEngine) DisallowEval() {
 	s.isEvalAllowed = false
 }
+
+// DispatchEvent dispatches an axiomatic event to the BaalAal engine.
+func (s *ScriptEngine) DispatchEvent(event *IAxiomaticEvent) {
+	s.BaalAal.EventBus.Publish(event)
+}
