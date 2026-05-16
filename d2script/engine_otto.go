@@ -44,20 +44,41 @@ func (s *ScriptEngine) AddFunction(name string, value interface{}) {
 }
 
 // RunScript runs the script file within the given path.
-func (s *ScriptEngine) RunScript(fileName string) (*otto.Value, error) {
+func (s *ScriptEngine) RunScript(fileName string) (val *otto.Value, err error) {
 	fileData, err := os.ReadFile(filepath.Clean(fileName))
 	if err != nil {
 		fmt.Printf("could not read script file: %s\n", err.Error())
 		return nil, err
 	}
 
-	val, err := s.getVM().Run(string(fileData))
+	vm := s.getVM()
+	interrupt := make(chan func(), 1)
+	vm.Interrupt = interrupt
+
+	go func() {
+		time.Sleep(defaultEvalTimeout)
+		interrupt <- func() {
+			panic(ErrEvalTimeout)
+		}
+	}()
+
+	defer func() {
+		if caught := recover(); caught != nil {
+			if caught == ErrEvalTimeout {
+				err = ErrEvalTimeout
+				return
+			}
+			panic(caught)
+		}
+	}()
+
+	res, err := vm.Run(string(fileData))
 	if err != nil {
 		fmt.Printf("Error running script: %s\n", err.Error())
 		return nil, err
 	}
 
-	return &val, nil
+	return &res, nil
 }
 
 // Eval JS code with a timeout.
