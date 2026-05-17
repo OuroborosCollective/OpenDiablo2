@@ -43,6 +43,9 @@ func (s *ScriptEngine) DisallowEval() {
 }
 
 // DispatchEvent dispatches an axiomatic event to the BaalAal engine.
+// This is the primary way logic should be handled in OpenDiablo2.
 func (s *ScriptEngine) DispatchEvent(event *IAxiomaticEvent) {
-	s.BaalAal.EventBus.Publish(event)
+	if s.BaalAal != nil {
+		s.BaalAal.EventBus.Publish(event)
+	}
 }

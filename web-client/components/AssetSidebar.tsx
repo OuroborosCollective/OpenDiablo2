@@ -3,7 +3,7 @@
 import React from "react";
 import { Info, Package, Image as ImageIcon, Music, FileJson } from "lucide-react";
 
-interface AssetMetadata {
+export interface AssetMetadata {
   id: string;
   name: string;
   type: "image" | "audio" | "json" | "data";
@@ -11,15 +11,11 @@ interface AssetMetadata {
   path: string;
 }
 
-const dummyAssets: AssetMetadata[] = [
-  { id: "1", name: "hero_sprite.d2s", type: "image", size: "1.2 MB", path: "assets/sprites/hero_sprite.d2s" },
-  { id: "2", name: "town_music.mp3", type: "audio", size: "4.5 MB", path: "assets/music/town_music.mp3" },
-  { id: "3", name: "item_stats.json", type: "json", size: "45 KB", path: "data/item_stats.json" },
-  { id: "4", name: "map_act1.mpq", type: "data", size: "120 MB", path: "data/map_act1.mpq" },
-  { id: "5", name: "monster_anim.dcc", type: "image", size: "800 KB", path: "assets/anims/monster_anim.dcc" },
-];
+interface AssetSidebarProps {
+  assets?: AssetMetadata[];
+}
 
-const AssetSidebar: React.FC = () => {
+const AssetSidebar: React.FC<AssetSidebarProps> = ({ assets = [] }) => {
   const getIcon = (type: string) => {
     switch (type) {
       case "image": return <ImageIcon size={16} />;
@@ -37,7 +33,12 @@ const AssetSidebar: React.FC = () => {
       </div>
       <div className="flex-grow overflow-y-auto">
         <div className="p-2 space-y-1">
-          {dummyAssets.map((asset) => (
+          {assets.length === 0 && (
+            <div className="p-8 text-center text-neutral-500 text-sm">
+              No assets loaded
+            </div>
+          )}
+          {assets.map((asset) => (
             <div
               key={asset.id}
               className="p-3 rounded-md hover:bg-white/5 transition-colors cursor-pointer group border border-transparent hover:border-white/10"

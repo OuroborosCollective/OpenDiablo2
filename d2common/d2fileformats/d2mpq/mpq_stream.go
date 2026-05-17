@@ -126,6 +126,10 @@ func (v *Stream) readInternal(buffer []byte, offset, count uint32) (uint32, erro
 }
 
 func (v *Stream) copy(buffer []byte, offset, pos, count uint32) (uint32, error) {
+	if offset >= uint32(len(buffer)) {
+		return 0, io.ErrShortBuffer
+	}
+
 	if pos >= uint32(len(v.Data)) {
 		return 0, io.EOF
 	}
@@ -137,6 +141,11 @@ func (v *Stream) copy(buffer []byte, offset, pos, count uint32) (uint32, error) 
 
 	if offset+bytesToCopy > uint32(len(buffer)) {
 		bytesToCopy = uint32(len(buffer)) - offset
+	}
+
+	// Double check bounds to prevent panic
+	if offset+bytesToCopy > uint32(len(buffer)) || pos+bytesToCopy > uint32(len(v.Data)) {
+		return 0, errors.New("copy bounds exceeded")
 	}
 
 	copy(buffer[offset:offset+bytesToCopy], v.Data[pos:pos+bytesToCopy])
@@ -203,6 +212,11 @@ func (v *Stream) loadBlock(blockIndex, expectedLength uint32) ([]byte, error) {
 	} else {
 		offset = blockIndex * v.Size
 		toRead = expectedLength
+	}
+
+	// Check for potential overflow or absurdly large toRead
+	if toRead > 100*1024*1024 { // 100MB limit per block as a safety measure
+		return []byte{}, fmt.Errorf("block size too large: %d", toRead)
 	}
 
 	offset += v.Block.FilePosition
