@@ -272,14 +272,7 @@ func decompressMulti(data []byte, expectedLength uint32) ([]byte, error) {
 
 	switch compressionType {
 	case 1: // Huffman
-		func() {
-			defer func() {
-				if r := recover(); r != nil {
-					err = fmt.Errorf("huffman decompression panic: %v", r)
-				}
-			}()
-			res = d2compression.HuffmanDecompress(data[1:])
-		}()
+		res = d2compression.HuffmanDecompress(data[1:])
 	case 2: // ZLib/Deflate
 		res, err = deflate(data[1:])
 	case 8: // PKLib/Impode

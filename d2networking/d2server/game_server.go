@@ -520,7 +520,7 @@ func getTownRegionFromAct(act int) d2enum.RegionIdType {
 	case 4:
 		return d2enum.RegionAct4Town
 	case 5:
-		return d2enum.RegonAct5Town
+		return d2enum.RegionAct5Town
 	default:
 		return d2enum.RegionAct1Town
 	}
