@@ -6,11 +6,12 @@ import AssetSidebar, { AssetMetadata } from "@/components/AssetSidebar";
 
 export default function Home() {
   const [assets] = useState<AssetMetadata[]>([
-    { id: "1", name: "hero_sprite.d2s", type: "image", size: "1.2 MB", path: "assets/sprites/hero_sprite.d2s" },
-    { id: "2", name: "town_music.mp3", type: "audio", size: "4.5 MB", path: "assets/music/town_music.mp3" },
-    { id: "3", name: "item_stats.json", type: "json", size: "45 KB", path: "data/item_stats.json" },
-    { id: "4", name: "map_act1.mpq", type: "data", size: "120 MB", path: "data/map_act1.mpq" },
-    { id: "5", name: "monster_anim.dcc", type: "image", size: "800 KB", path: "assets/anims/monster_anim.dcc" },
+    { id: "1", name: "d2data.mpq", type: "data", size: "245 MB", path: "data/d2data.mpq" },
+    { id: "2", name: "d2exp.mpq", type: "data", size: "180 MB", path: "data/d2exp.mpq" },
+    { id: "3", name: "d2sfx.mpq", type: "audio", size: "520 MB", path: "data/d2sfx.mpq" },
+    { id: "4", name: "d2music.mpq", type: "audio", size: "380 MB", path: "data/d2music.mpq" },
+    { id: "5", name: "d2video.mpq", type: "data", size: "900 MB", path: "data/d2video.mpq" },
+    { id: "6", name: "d2char.mpq", type: "image", size: "110 MB", path: "data/d2char.mpq" },
   ]);
 
   return (
