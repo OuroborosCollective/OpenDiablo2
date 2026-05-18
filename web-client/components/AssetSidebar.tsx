@@ -16,6 +16,17 @@ interface AssetSidebarProps {
 }
 
 const AssetSidebar: React.FC<AssetSidebarProps> = ({ assets = [] }) => {
+  const [resonance, setResonance] = React.useState(0);
+  const [cycle, setCycle] = React.useState(0);
+
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      setResonance(Math.random());
+      setCycle((prev) => (prev + 0.0001) % 2147483647);
+    }, 100);
+    return () => clearInterval(interval);
+  }, []);
+
   const getIcon = (type: string) => {
     switch (type) {
       case "image": return <ImageIcon size={16} />;
@@ -62,11 +73,24 @@ const AssetSidebar: React.FC<AssetSidebarProps> = ({ assets = [] }) => {
           ))}
         </div>
       </div>
-      <div className="p-4 bg-black/20 border-t border-white/10">
-        <div className="text-[10px] text-neutral-500 uppercase tracking-widest font-bold mb-2">System Status</div>
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-          <span className="text-xs text-neutral-300">Engine Responsive</span>
+      <div className="p-4 bg-black/20 border-t border-white/10 space-y-3">
+        <div>
+          <div className="text-[10px] text-neutral-500 uppercase tracking-widest font-bold mb-2">System Status</div>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+            <span className="text-xs text-neutral-300">Axiomatic Engine Active</span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 text-[10px] font-mono">
+          <div className="p-2 bg-black/40 rounded border border-white/5">
+            <div className="text-neutral-500 mb-1">RESONANCE</div>
+            <div className="text-blue-400">{resonance.toFixed(4)}</div>
+          </div>
+          <div className="p-2 bg-black/40 rounded border border-white/5">
+            <div className="text-neutral-500 mb-1">BAALAAL CYCLE</div>
+            <div className="text-purple-400">{cycle.toFixed(2)}</div>
+          </div>
         </div>
       </div>
     </aside>

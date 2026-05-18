@@ -9,11 +9,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/robertkrimen/otto"
-
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2enum"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2util"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2asset"
+	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2emergent"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2hero"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2map/d2mapengine"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2map/d2mapgen"
@@ -54,6 +53,7 @@ type GameServer struct {
 	maxConnections    int
 	packetManagerChan chan ReceivedPacket
 	heroStateFactory  *d2hero.HeroStateFactory
+	emergentEngine    *d2emergent.ARELogikEngine
 
 	*d2util.Logger
 }
@@ -98,6 +98,7 @@ func NewGameServer(asset *d2asset.AssetManager,
 		scriptEngine:      d2script.CreateScriptEngine(),
 		seed:              time.Now().UnixNano(),
 		heroStateFactory:  heroStateFactory,
+		emergentEngine:    d2emergent.CreateARELogikEngine(l),
 	}
 
 	gameServer.Logger = d2util.NewLogger()
@@ -116,14 +117,6 @@ func NewGameServer(asset *d2asset.AssetManager,
 	mapGen.GenerateAct1Overworld()
 
 	gameServer.mapEngines = append(gameServer.mapEngines, mapEngine)
-
-	gameServer.scriptEngine.AddFunction("getMapEngines", func(call otto.FunctionCall) otto.Value {
-		val, err := gameServer.scriptEngine.ToValue(gameServer.mapEngines)
-		if err != nil {
-			gameServer.Error(err.Error())
-		}
-		return val
-	})
 
 	return gameServer, nil
 }
@@ -146,6 +139,25 @@ func (g *GameServer) Start() error {
 	g.listener = l
 
 	go g.packetManager()
+
+	go func() {
+		ticker := time.NewTicker(100 * time.Millisecond)
+		defer ticker.Stop()
+
+		var tick uint64
+		for {
+			select {
+			case <-g.ctx.Done():
+				return
+			case <-ticker.C:
+				g.scriptEngine.BaalAal.ProcessCycle(tick)
+				if g.emergentEngine != nil {
+					g.emergentEngine.ProcessEmergence()
+				}
+				tick++
+			}
+		}
+	}()
 
 	go func() {
 		for {
