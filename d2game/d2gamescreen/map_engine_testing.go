@@ -77,7 +77,7 @@ func getRegions() []regionSpec {
 		{d2enum.RegionAct4Lava, 836, 862, []int{}},
 
 		// Act V -- broken or wrong order
-		{d2enum.RegonAct5Town, 863, 864, []int{}},
+		{d2enum.RegionAct5Town, 863, 864, []int{}},
 		{d2enum.RegionAct5Siege, 865, 879, []int{}},
 		{d2enum.RegionAct5Barricade, 880, 1002, []int{}},
 		{d2enum.RegionAct5IceCaves, 1003, 1041, []int{}},

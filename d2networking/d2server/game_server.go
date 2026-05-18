@@ -9,8 +9,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/robertkrimen/otto"
-
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2enum"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2util"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2asset"
@@ -117,13 +115,20 @@ func NewGameServer(asset *d2asset.AssetManager,
 
 	gameServer.mapEngines = append(gameServer.mapEngines, mapEngine)
 
-	gameServer.scriptEngine.AddFunction("getMapEngines", func(call otto.FunctionCall) otto.Value {
-		val, err := gameServer.scriptEngine.ToValue(gameServer.mapEngines)
-		if err != nil {
-			gameServer.Error(err.Error())
+	// Start Axiomatic loop
+	go func() {
+		tick := uint64(0)
+		ticker := time.NewTicker(100 * time.Millisecond)
+		for {
+			select {
+			case <-gameServer.ctx.Done():
+				return
+			case <-ticker.C:
+				gameServer.scriptEngine.BaalAal.ProcessCycle(tick)
+				tick++
+			}
 		}
-		return val
-	})
+	}()
 
 	return gameServer, nil
 }
@@ -508,7 +513,7 @@ func getTownRegionFromAct(act int) d2enum.RegionIdType {
 	case 4:
 		return d2enum.RegionAct4Town
 	case 5:
-		return d2enum.RegonAct5Town
+		return d2enum.RegionAct5Town
 	default:
 		return d2enum.RegionAct1Town
 	}
