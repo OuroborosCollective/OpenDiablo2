@@ -202,10 +202,10 @@ func getPrimes() [][]byte {
 func decode(input *d2datautils.BitStream, head *linkedNode) *linkedNode {
 	node := head
 
-	for node.child0 != nil {
+	for node != nil && node.child0 != nil {
 		bit := input.ReadBits(1)
 		if bit == -1 {
-			log.Fatal("unexpected end of file")
+			return nil
 		}
 
 		if bit == 0 {
@@ -376,11 +376,27 @@ func buildTree(tail *linkedNode) *linkedNode {
 // HuffmanDecompress decompresses huffman-compressed data
 //nolint:gomnd // binary decode magic
 func HuffmanDecompress(data []byte) []byte {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("HuffmanDecompress recovered from panic: %v", r)
+		}
+	}()
+
+	if len(data) == 0 {
+		return nil
+	}
+
 	comptype := data[0]
 	primes := getPrimes()
 
 	if comptype == 0 {
-		log.Panic("compression type 0 is not currently supported")
+		log.Printf("compression type 0 is not currently supported")
+		return nil
+	}
+
+	if int(comptype) >= len(primes) {
+		log.Printf("invalid huffman compression type: %d", comptype)
+		return nil
 	}
 
 	tail := buildList(primes[comptype])
@@ -394,12 +410,18 @@ func HuffmanDecompress(data []byte) []byte {
 Loop:
 	for {
 		node := decode(bitstream, head)
+		if node == nil {
+			break Loop
+		}
 		decoded = node.decompressedValue
 		switch decoded {
 		case 256:
 			break Loop
 		case 257:
 			newvalue := bitstream.ReadBits(8)
+			if newvalue == -1 {
+				break Loop
+			}
 
 			outputstream.PushBytes(byte(newvalue))
 			tail = insertNode(tail, newvalue)

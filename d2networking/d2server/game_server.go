@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"sync"
@@ -477,8 +478,30 @@ func (g *GameServer) OnPacketReceived(client ClientConnection, packet d2netpacke
 		playerState.X = movePacket.DestX
 		playerState.Y = movePacket.DestY
 
+		// Dispatch Axiomatic event for movement
+		g.scriptEngine.DispatchEvent(&d2script.IAxiomaticEvent{
+			ID:      "MoveEvent-" + client.GetUniqueID(),
+			Type:    "PlayerMove",
+			Payload: movePacket,
+			Metadata: map[string]interface{}{
+				"client_id": client.GetUniqueID(),
+				"x":         movePacket.DestX,
+				"y":         movePacket.DestY,
+			},
+		})
+
 		g.sendPacketToClients(packet)
 	case d2netpackettype.CastSkill, d2netpackettype.SpawnItem:
+		// Dispatch Axiomatic event for skills/items
+		g.scriptEngine.DispatchEvent(&d2script.IAxiomaticEvent{
+			ID:      fmt.Sprintf("%d-%s", packet.PacketType, client.GetUniqueID()),
+			Type:    fmt.Sprintf("%d", packet.PacketType),
+			Payload: packet.PacketData,
+			Metadata: map[string]interface{}{
+				"client_id": client.GetUniqueID(),
+			},
+		})
+
 		g.sendPacketToClients(packet)
 	case d2netpackettype.SavePlayer:
 		savePacket, err := d2netpacket.UnmarshalSavePlayer(packet.PacketData)
