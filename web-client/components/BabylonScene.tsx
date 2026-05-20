@@ -2,8 +2,13 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { Engine, Scene, ArcRotateCamera, Vector3, HemisphericLight, MeshBuilder, Mesh, StandardMaterial, Color3 } from "@babylonjs/core";
+import { PacketType } from "@/utils/packetTypes";
 
-const BabylonScene: React.FC = () => {
+interface BabylonSceneProps {
+  onAxiomaticUpdate?: (resonance: number, cycle: number) => void;
+}
+
+const BabylonScene: React.FC<BabylonSceneProps> = ({ onAxiomaticUpdate }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const socketRef = useRef<WebSocket | null>(null);
   const [status, setStatus] = useState("Connecting...");
@@ -43,7 +48,7 @@ const BabylonScene: React.FC = () => {
       setStatus("Connected");
       // Send Connection Request
       const connRequest = {
-        packetType: 0, // PlayerConnectionRequest
+        packetType: PacketType.PlayerConnectionRequest,
         packetData: btoa(JSON.stringify({
           id: "web-player-" + Math.random().toString(36).substr(2, 9),
           heroName: "WebHero",
@@ -56,11 +61,16 @@ const BabylonScene: React.FC = () => {
 
     ws.onmessage = (event) => {
       const packet = JSON.parse(event.data);
-      if (packet.packetType === 2) { // MovePlayer
+      if (packet.packetType === PacketType.MovePlayer) {
         const moveData = JSON.parse(atob(packet.packetData));
         if (playerRef.current) {
           playerRef.current.position.x = moveData.destX;
           playerRef.current.position.z = moveData.destY; // Mapping Y to Z for 3D ground
+        }
+      } else if (packet.packetType === PacketType.AxiomaticStatus) {
+        const statusData = JSON.parse(atob(packet.packetData));
+        if (onAxiomaticUpdate) {
+          onAxiomaticUpdate(statusData.resonance, statusData.cycle);
         }
       }
     };
@@ -83,7 +93,7 @@ const BabylonScene: React.FC = () => {
 
           if (ws.readyState === WebSocket.OPEN) {
             const movePacket = {
-              packetType: 2, // MovePlayer
+              packetType: PacketType.MovePlayer,
               packetData: btoa(JSON.stringify({
                 destX,
                 destY,
@@ -112,7 +122,7 @@ const BabylonScene: React.FC = () => {
       ws.close();
       engine.dispose();
     };
-  }, []);
+  }, [onAxiomaticUpdate]);
 
   return (
     <div className="relative w-full h-full">

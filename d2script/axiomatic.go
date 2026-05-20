@@ -158,5 +158,22 @@ func (e *BaalAalEngine) ProcessCycle(tick uint64) {
 	if e.EventBus.resonanceState == 0 {
 		e.EventBus.resonanceState = 1.0 // Seed if zero
 	}
-	e.EventBus.resonanceState = math.Mod(e.EventBus.resonanceState * 1.0001, 2147483647)
+
+	// Complex recursive logic: The resonance state grows and wraps,
+	// but is also influenced by the tick and a harmonic sine wave.
+	harmonic := math.Sin(float64(tick)*0.01) * 0.05
+	e.EventBus.resonanceState = math.Mod((e.EventBus.resonanceState+harmonic)*1.0001, 2147483647)
+
+	if e.EventBus.resonanceState < 0 {
+		e.EventBus.resonanceState = 1.0
+	}
+}
+
+// GetStatus returns the current resonance and cycle.
+func (e *BaalAalEngine) GetStatus() (float64, float64) {
+	e.EventBus.RLock()
+	defer e.EventBus.RUnlock()
+
+	resonance := math.Mod(e.EventBus.resonanceState, 1.0)
+	return resonance, e.EventBus.resonanceState
 }
