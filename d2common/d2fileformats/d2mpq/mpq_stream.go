@@ -38,6 +38,9 @@ func CreateStream(mpq *MPQ, block *Block, fileName string) (*Stream, error) {
 	}
 
 	s.Size = 0x200 << s.MPQ.header.BlockSize //nolint:gomnd // MPQ magic
+	if s.Size == 0 {
+		return nil, errors.New("invalid MPQ block size")
+	}
 
 	if s.Block.HasFlag(FilePatchFile) {
 		return nil, errors.New("patching is not supported")
@@ -58,6 +61,9 @@ func (v *Stream) loadBlockOffsets() error {
 	}
 
 	blockPositionCount := ((v.Block.UncompressedFileSize + v.Size - 1) / v.Size) + 1
+	if blockPositionCount > 1000000 { // Safety limit for number of blocks
+		return errors.New("too many blocks in MPQ file")
+	}
 	v.Positions = make([]uint32, blockPositionCount)
 
 	if err := binary.Read(v.MPQ.file, binary.LittleEndian, &v.Positions); err != nil {
@@ -273,6 +279,9 @@ func decompressMulti(data []byte, expectedLength uint32) ([]byte, error) {
 	switch compressionType {
 	case 1: // Huffman
 		res = d2compression.HuffmanDecompress(data[1:])
+		if res == nil {
+			return nil, errors.New("huffman decompression failed")
+		}
 	case 2: // ZLib/Deflate
 		res, err = deflate(data[1:])
 	case 8: // PKLib/Impode
@@ -293,13 +302,21 @@ func decompressMulti(data []byte, expectedLength uint32) ([]byte, error) {
 		// sparse then bzip2
 		return []byte{}, errors.New("sparse decompression + bzip2 decompression (0x30) not supported")
 	case 0x41:
-		res, err = d2compression.WavDecompress(d2compression.HuffmanDecompress(data[1:]), 1)
+		huff := d2compression.HuffmanDecompress(data[1:])
+		if huff == nil {
+			return nil, errors.New("huffman decompression failed in combo 0x41")
+		}
+		res, err = d2compression.WavDecompress(huff, 1)
 	case 0x48:
 		// byte[] result = PKDecompress(sinput, outputLength);
 		// return MpqWavCompression.Decompress(new MemoryStream(result), 1);
 		return []byte{}, errors.New("pk + mpqwav decompression (0x48) not supported")
 	case 0x81:
-		res, err = d2compression.WavDecompress(d2compression.HuffmanDecompress(data[1:]), 2)
+		huff := d2compression.HuffmanDecompress(data[1:])
+		if huff == nil {
+			return nil, errors.New("huffman decompression failed in combo 0x81")
+		}
+		res, err = d2compression.WavDecompress(huff, 2)
 	case 0x88:
 		// byte[] result = PKDecompress(sinput, outputLength);
 		// return MpqWavCompression.Decompress(new MemoryStream(result), 2);
