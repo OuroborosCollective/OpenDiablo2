@@ -141,6 +141,8 @@ func (g *GameServer) Start() error {
 
 	go g.packetManager()
 
+	g.StartWebSocket(6670)
+
 	go func() {
 		ticker := time.NewTicker(100 * time.Millisecond)
 		defer ticker.Stop()
@@ -155,6 +157,16 @@ func (g *GameServer) Start() error {
 				if g.emergentEngine != nil {
 					g.emergentEngine.ProcessEmergence()
 				}
+
+				// Broadcast Axiomatic status every 10 ticks (1 second)
+				if tick%10 == 0 {
+					resonance, cycle := g.scriptEngine.BaalAal.GetStatus()
+					statusPacket, err := d2netpacket.CreateAxiomaticStatusPacket(resonance, cycle)
+					if err == nil {
+						g.sendPacketToClients(statusPacket)
+					}
+				}
+
 				tick++
 			}
 		}

@@ -18,7 +18,9 @@ func TestScriptEngine_EvalTimeout(t *testing.T) {
 		t.Error("expected error for infinite loop, got nil")
 	}
 
-	if elapsed < 100*time.Millisecond {
+	// In release builds, Eval returns ErrScriptingDisabled immediately.
+	// We only check the timeout duration for non-release builds where it actually runs.
+	if err == ErrEvalTimeout && elapsed < 100*time.Millisecond {
 		t.Errorf("timeout too fast: %v", elapsed)
 	}
 }
