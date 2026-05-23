@@ -46,3 +46,22 @@ func (s *Source) Path() string {
 func (s *Source) String() string {
 	return s.Path()
 }
+
+// Listfile returns all files in the filesystem source
+func (s *Source) Listfile() ([]string, error) {
+	var files []string
+	err := filepath.Walk(s.Root, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() {
+			rel, err := filepath.Rel(s.Root, path)
+			if err != nil {
+				return err
+			}
+			files = append(files, rel)
+		}
+		return nil
+	})
+	return files, err
+}

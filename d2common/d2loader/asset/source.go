@@ -11,4 +11,5 @@ type Source interface {
 	Open(name string) (io.ReadSeeker, error)
 	Path() string
 	Exists(subPath string) bool
+	Listfile() ([]string, error)
 }

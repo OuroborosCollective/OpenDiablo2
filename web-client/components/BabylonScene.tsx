@@ -4,11 +4,14 @@ import React, { useEffect, useRef, useState } from "react";
 import { Engine, Scene, ArcRotateCamera, Vector3, HemisphericLight, MeshBuilder, Mesh, StandardMaterial, Color3 } from "@babylonjs/core";
 import { PacketType } from "@/utils/packetTypes";
 
+import { AssetMetadata } from "@/components/AssetSidebar";
+
 interface BabylonSceneProps {
   onAxiomaticUpdate?: (resonance: number, cycle: number) => void;
+  onAssetMetadataUpdate?: (assets: AssetMetadata[]) => void;
 }
 
-const BabylonScene: React.FC<BabylonSceneProps> = ({ onAxiomaticUpdate }) => {
+const BabylonScene: React.FC<BabylonSceneProps> = ({ onAxiomaticUpdate, onAssetMetadataUpdate }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const socketRef = useRef<WebSocket | null>(null);
   const [status, setStatus] = useState("Connecting...");
@@ -72,6 +75,11 @@ const BabylonScene: React.FC<BabylonSceneProps> = ({ onAxiomaticUpdate }) => {
         if (onAxiomaticUpdate) {
           onAxiomaticUpdate(statusData.resonance, statusData.cycle);
         }
+      } else if (packet.packetType === PacketType.AssetMetadataList) {
+        const assetData = JSON.parse(atob(packet.packetData));
+        if (onAssetMetadataUpdate) {
+          onAssetMetadataUpdate(assetData.assets);
+        }
       }
     };
 
@@ -122,7 +130,7 @@ const BabylonScene: React.FC<BabylonSceneProps> = ({ onAxiomaticUpdate }) => {
       ws.close();
       engine.dispose();
     };
-  }, [onAxiomaticUpdate]);
+  }, [onAxiomaticUpdate, onAssetMetadataUpdate]);
 
   return (
     <div className="relative w-full h-full">
