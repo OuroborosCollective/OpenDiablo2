@@ -49,8 +49,7 @@ func CreateGame(
 	gameClient *d2client.GameClient,
 	term d2interface.Terminal,
 	l d2util.LogLevel,
-	guiManager *d2gui.GuiManager,
-	config *d2config.Configuration,
+	guiManager *d2gui.GuiManager, bgmVolume, sfxVolume float64,
 ) (*Game, error) {
 	// find the local player and its initial location
 	var startX, startY float64
@@ -77,7 +76,7 @@ func CreateGame(
 		ticksSinceLevelCheck: 0,
 		mapRenderer: d2maprenderer.CreateMapRenderer(asset, renderer,
 			gameClient.MapEngine, term, l, startX, startY),
-		escapeMenu:    d2player.NewEscapeMenu(navigator, renderer, audioProvider, ui, guiManager, asset, l, keyMap, config),
+		escapeMenu:    d2player.NewEscapeMenu(navigator.Config(), navigator, renderer, audioProvider, ui, guiManager, asset, l, keyMap, bgmVolume, sfxVolume),
 		inputManager:  inputManager,
 		audioProvider: audioProvider,
 		renderer:      renderer,

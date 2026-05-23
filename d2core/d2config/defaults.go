@@ -11,9 +11,8 @@ func DefaultConfig() *Configuration {
 	const (
 		defaultSfxVolume = 1.0
 		defaultBgmVolume = 0.3
-		defaultThreeDBias = 0.5
-		defaultGamma     = 0.5
-		defaultContrast  = 0.5
+		defaultGamma     = 1.0
+		defaultContrast  = 1.0
 	)
 
 	config := &Configuration{
@@ -23,7 +22,6 @@ func DefaultConfig() *Configuration {
 		VsyncEnabled:    true,
 		SfxVolume:       defaultSfxVolume,
 		BgmVolume:       defaultBgmVolume,
-		ThreeDBias:      defaultThreeDBias,
 		Gamma:           defaultGamma,
 		Contrast:        defaultContrast,
 		MpqPath:         "C:/Program Files (x86)/Diablo II",

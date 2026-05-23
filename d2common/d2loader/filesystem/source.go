@@ -30,7 +30,7 @@ func (s *Source) Open(subPath string) (io.ReadSeeker, error) {
 // Exists returns true if the file exists
 func (s *Source) Exists(subPath string) bool {
 	_, err := os.Stat(s.fullPath(subPath))
-	return os.IsExist(err)
+	return err == nil
 }
 
 func (s *Source) fullPath(subPath string) string {
@@ -45,4 +45,23 @@ func (s *Source) Path() string {
 // String returns the path
 func (s *Source) String() string {
 	return s.Path()
+}
+
+// Listfile returns all files in the filesystem source
+func (s *Source) Listfile() ([]string, error) {
+	var files []string
+	err := filepath.Walk(s.Root, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() {
+			rel, err := filepath.Rel(s.Root, path)
+			if err != nil {
+				return err
+			}
+			files = append(files, rel)
+		}
+		return nil
+	})
+	return files, err
 }

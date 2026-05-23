@@ -127,6 +127,11 @@ func (eap *AudioProvider) SetVolumes(bgmVolume, sfxVolume float64) {
 	}
 }
 
+// GetVolumes returns the current volume levels
+func (eap *AudioProvider) GetVolumes() (bgmVolume, sfxVolume float64) {
+	return eap.bgmVolume, eap.sfxVolume
+}
+
 // createSoundEffect creates a new instance of ebiten's sound effect implementation.
 func (eap *AudioProvider) createSoundEffect(sfx string, context *audio.Context,
 	loop bool) *SoundEffect {

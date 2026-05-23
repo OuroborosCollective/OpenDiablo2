@@ -4,16 +4,20 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"sync"
 	"time"
 
-	"github.com/robertkrimen/otto"
-
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2enum"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2util"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2asset"
+	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2emergent"
+	"os"
+	"path/filepath"
+	"strconv"
+
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2hero"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2map/d2mapengine"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2map/d2mapgen"
@@ -54,6 +58,7 @@ type GameServer struct {
 	maxConnections    int
 	packetManagerChan chan ReceivedPacket
 	heroStateFactory  *d2hero.HeroStateFactory
+	emergentEngine    *d2emergent.ARELogikEngine
 
 	*d2util.Logger
 }
@@ -98,6 +103,7 @@ func NewGameServer(asset *d2asset.AssetManager,
 		scriptEngine:      d2script.CreateScriptEngine(),
 		seed:              time.Now().UnixNano(),
 		heroStateFactory:  heroStateFactory,
+		emergentEngine:    d2emergent.CreateARELogikEngine(l),
 	}
 
 	gameServer.Logger = d2util.NewLogger()
@@ -116,14 +122,6 @@ func NewGameServer(asset *d2asset.AssetManager,
 	mapGen.GenerateAct1Overworld()
 
 	gameServer.mapEngines = append(gameServer.mapEngines, mapEngine)
-
-	gameServer.scriptEngine.AddFunction("getMapEngines", func(call otto.FunctionCall) otto.Value {
-		val, err := gameServer.scriptEngine.ToValue(gameServer.mapEngines)
-		if err != nil {
-			gameServer.Error(err.Error())
-		}
-		return val
-	})
 
 	return gameServer, nil
 }
@@ -146,6 +144,37 @@ func (g *GameServer) Start() error {
 	g.listener = l
 
 	go g.packetManager()
+
+	g.StartWebSocket(6670)
+
+	go func() {
+		ticker := time.NewTicker(100 * time.Millisecond)
+		defer ticker.Stop()
+
+		var tick uint64
+		for {
+			select {
+			case <-g.ctx.Done():
+				return
+			case <-ticker.C:
+				g.scriptEngine.BaalAal.ProcessCycle(tick)
+				if g.emergentEngine != nil {
+					g.emergentEngine.ProcessEmergence()
+				}
+
+				// Broadcast Axiomatic status every 10 ticks (1 second)
+				if tick%10 == 0 {
+					resonance, cycle := g.scriptEngine.BaalAal.GetStatus()
+					statusPacket, err := d2netpacket.CreateAxiomaticStatusPacket(resonance, cycle)
+					if err == nil {
+						g.sendPacketToClients(statusPacket)
+					}
+				}
+
+				tick++
+			}
+		}
+	}()
 
 	go func() {
 		for {
@@ -324,18 +353,20 @@ func (g *GameServer) registerConnection(b []byte, conn net.Conn) (ClientConnecti
 //
 // For more information, see d2networking.d2netpacket.
 func (g *GameServer) OnClientConnected(client ClientConnection) {
-	// Temporary position hack --------------------------------------------
-	// https://github.com/OpenDiablo2/OpenDiablo2/issues/829
-	sx, sy := g.mapEngines[0].GetStartPosition()
-	clientPlayerState := client.GetPlayerState()
-	clientPlayerState.X = sx
-	clientPlayerState.Y = sy
-	// --------------------------------------------------------------------
+	playerState := client.GetPlayerState()
+	x, y := playerState.X, playerState.Y
+
+	// If the player has no saved position, use the default start position
+	if x == 0 && y == 0 {
+		x, y = g.mapEngines[0].GetStartPosition()
+		playerState.X = x
+		playerState.Y = y
+	}
 
 	g.Infof("Client connected with an id of %s", client.GetUniqueID())
 	g.connections[client.GetUniqueID()] = client
 
-	g.handleClientConnection(client, sx, sy)
+	g.handleClientConnection(client, x, y)
 }
 
 func (g *GameServer) handleClientConnection(client ClientConnection, x, y float64) {
@@ -349,7 +380,19 @@ func (g *GameServer) handleClientConnection(client ClientConnection, x, y float6
 		g.Errorf("GameServer: error sending UpdateServerInfoPacket to client %s: %s", client.GetUniqueID(), err)
 	}
 
-	gmp, err := d2netpacket.CreateGenerateMapPacket(d2enum.RegionAct1Town)
+	// Send Asset Metadata
+	assets := g.getAssetMetadataList()
+	amp, err := d2netpacket.CreateAssetMetadataListPacket(assets)
+	if err != nil {
+		g.Errorf("AssetMetadataListPacket: %v", err)
+	} else {
+		err = client.SendPacketToClient(amp)
+		if err != nil {
+			g.Errorf("GameServer: error sending AssetMetadataListPacket to client %s: %s", client.GetUniqueID(), err)
+		}
+	}
+
+	gmp, err := d2netpacket.CreateGenerateMapPacket(getTownRegionFromAct(client.GetPlayerState().Act))
 	if err != nil {
 		g.Errorf("GenerateMapPacket: %v", err)
 	}
@@ -463,8 +506,30 @@ func (g *GameServer) OnPacketReceived(client ClientConnection, packet d2netpacke
 		playerState.X = movePacket.DestX
 		playerState.Y = movePacket.DestY
 
+		// Dispatch Axiomatic event for movement
+		g.scriptEngine.DispatchEvent(&d2script.IAxiomaticEvent{
+			ID:      "MoveEvent-" + client.GetUniqueID(),
+			Type:    "PlayerMove",
+			Payload: movePacket,
+			Metadata: map[string]interface{}{
+				"client_id": client.GetUniqueID(),
+				"x":         movePacket.DestX,
+				"y":         movePacket.DestY,
+			},
+		})
+
 		g.sendPacketToClients(packet)
 	case d2netpackettype.CastSkill, d2netpackettype.SpawnItem:
+		// Dispatch Axiomatic event for skills/items
+		g.scriptEngine.DispatchEvent(&d2script.IAxiomaticEvent{
+			ID:      fmt.Sprintf("%d-%s", packet.PacketType, client.GetUniqueID()),
+			Type:    fmt.Sprintf("%d", packet.PacketType),
+			Payload: packet.PacketData,
+			Metadata: map[string]interface{}{
+				"client_id": client.GetUniqueID(),
+			},
+		})
+
 		g.sendPacketToClients(packet)
 	case d2netpackettype.SavePlayer:
 		savePacket, err := d2netpacket.UnmarshalSavePlayer(packet.PacketData)
@@ -493,4 +558,70 @@ func (g *GameServer) OnPacketReceived(client ClientConnection, packet d2netpacke
 	}
 
 	return nil
+}
+
+func (g *GameServer) getAssetMetadataList() []d2netpacket.AssetMetadata {
+	var assets []d2netpacket.AssetMetadata
+
+	for _, source := range g.asset.Loader.Sources {
+		path := source.Path()
+		fi, err := os.Stat(path)
+		if err != nil {
+			continue
+		}
+
+		name := filepath.Base(path)
+		size := strconv.FormatInt(fi.Size()/(1024*1024), 10) + " MB"
+		assetType := "data"
+		ext := filepath.Ext(path)
+		if ext == ".mpq" {
+			// Try to guess content type from name if possible, or just use data
+			if name == "d2music.mpq" || name == "d2sfx.mpq" {
+				assetType = "audio"
+			}
+		}
+
+		assets = append(assets, d2netpacket.AssetMetadata{
+			ID:   name,
+			Name: name,
+			Type: assetType,
+			Size: size,
+			Path: path,
+		})
+
+		// Optionally list files from within the source if needed,
+		// but for the sidebar we probably just want the main archives first.
+		// If we want actual files:
+		/*
+			files, _ := source.Listfile()
+			for _, f := range files {
+				assets = append(assets, d2netpacket.AssetMetadata{
+					ID:   f,
+					Name: filepath.Base(f),
+					Type: string(types.Ext2AssetType(filepath.Ext(f))), // need to convert AssetType to string
+					Size: "N/A",
+					Path: f,
+				})
+			}
+		*/
+	}
+
+	return assets
+}
+
+func getTownRegionFromAct(act int) d2enum.RegionIdType {
+	switch act {
+	case 1:
+		return d2enum.RegionAct1Town
+	case 2:
+		return d2enum.RegionAct2Town
+	case 3:
+		return d2enum.RegionAct3Town
+	case 4:
+		return d2enum.RegionAct4Town
+	case 5:
+		return d2enum.RegionAct5Town
+	default:
+		return d2enum.RegionAct1Town
+	}
 }

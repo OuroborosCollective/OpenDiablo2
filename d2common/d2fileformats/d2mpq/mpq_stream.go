@@ -38,6 +38,9 @@ func CreateStream(mpq *MPQ, block *Block, fileName string) (*Stream, error) {
 	}
 
 	s.Size = 0x200 << s.MPQ.header.BlockSize //nolint:gomnd // MPQ magic
+	if s.Size == 0 {
+		return nil, errors.New("invalid MPQ block size")
+	}
 
 	if s.Block.HasFlag(FilePatchFile) {
 		return nil, errors.New("patching is not supported")
@@ -58,6 +61,9 @@ func (v *Stream) loadBlockOffsets() error {
 	}
 
 	blockPositionCount := ((v.Block.UncompressedFileSize + v.Size - 1) / v.Size) + 1
+	if blockPositionCount > 1000000 { // Safety limit for number of blocks
+		return errors.New("too many blocks in MPQ file")
+	}
 	v.Positions = make([]uint32, blockPositionCount)
 
 	if err := binary.Read(v.MPQ.file, binary.LittleEndian, &v.Positions); err != nil {
@@ -126,9 +132,26 @@ func (v *Stream) readInternal(buffer []byte, offset, count uint32) (uint32, erro
 }
 
 func (v *Stream) copy(buffer []byte, offset, pos, count uint32) (uint32, error) {
+	if offset >= uint32(len(buffer)) {
+		return 0, io.ErrShortBuffer
+	}
+
+	if pos >= uint32(len(v.Data)) {
+		return 0, io.EOF
+	}
+
 	bytesToCopy := d2math.Min(uint32(len(v.Data))-pos, count)
 	if bytesToCopy <= 0 {
 		return 0, io.EOF
+	}
+
+	if offset+bytesToCopy > uint32(len(buffer)) {
+		bytesToCopy = uint32(len(buffer)) - offset
+	}
+
+	// Double check bounds to prevent panic
+	if offset+bytesToCopy > uint32(len(buffer)) || pos+bytesToCopy > uint32(len(v.Data)) {
+		return 0, errors.New("copy bounds exceeded")
 	}
 
 	copy(buffer[offset:offset+bytesToCopy], v.Data[pos:pos+bytesToCopy])
@@ -182,11 +205,24 @@ func (v *Stream) loadBlock(blockIndex, expectedLength uint32) ([]byte, error) {
 	)
 
 	if v.Block.HasFlag(FileCompress) || v.Block.HasFlag(FileImplode) {
+		if blockIndex+1 >= uint32(len(v.Positions)) {
+			return []byte{}, errors.New("block index out of bounds")
+		}
 		offset = v.Positions[blockIndex]
+
+		if v.Positions[blockIndex+1] < offset {
+			return []byte{}, errors.New("invalid block offsets in MPQ")
+		}
+
 		toRead = v.Positions[blockIndex+1] - offset
 	} else {
 		offset = blockIndex * v.Size
 		toRead = expectedLength
+	}
+
+	// Check for potential overflow or absurdly large toRead
+	if toRead > 100*1024*1024 { // 100MB limit per block as a safety measure
+		return []byte{}, fmt.Errorf("block size too large: %d", toRead)
 	}
 
 	offset += v.Block.FilePosition
@@ -208,79 +244,96 @@ func (v *Stream) loadBlock(blockIndex, expectedLength uint32) ([]byte, error) {
 		decryptBytes(data, blockIndex+v.Block.EncryptionSeed)
 	}
 
-	if v.Block.HasFlag(FileCompress) && (toRead != expectedLength) {
-		if !v.Block.HasFlag(FileSingleUnit) {
-			return decompressMulti(data, expectedLength)
+	if v.Block.HasFlag(FileCompress) {
+		if toRead != expectedLength {
+			if !v.Block.HasFlag(FileSingleUnit) {
+				return decompressMulti(data, expectedLength)
+			}
+
+			return pkDecompress(data)
 		}
 
-		return pkDecompress(data)
+		return data, nil
 	}
 
-	if v.Block.HasFlag(FileImplode) && (toRead != expectedLength) {
-		return pkDecompress(data)
+	if v.Block.HasFlag(FileImplode) {
+		if toRead != expectedLength {
+			return pkDecompress(data)
+		}
+
+		return data, nil
 	}
 
 	return data, nil
 }
 
 //nolint:gomnd,funlen,gocyclo // Will fix enum values later, can't help function length
-func decompressMulti(data []byte /*expectedLength*/, _ uint32) ([]byte, error) {
+func decompressMulti(data []byte, expectedLength uint32) ([]byte, error) {
+	if len(data) == 0 {
+		return []byte{}, errors.New("empty data for decompression")
+	}
 	compressionType := data[0]
+	var res []byte
+	var err error
 
 	switch compressionType {
 	case 1: // Huffman
-		return []byte{}, errors.New("huffman decompression not supported")
+		res = d2compression.HuffmanDecompress(data[1:])
+		if res == nil {
+			return nil, errors.New("huffman decompression failed")
+		}
 	case 2: // ZLib/Deflate
-		return deflate(data[1:])
+		res, err = deflate(data[1:])
 	case 8: // PKLib/Impode
-		return pkDecompress(data[1:])
+		res, err = pkDecompress(data[1:])
 	case 0x10: // BZip2
-		return []byte{}, errors.New("bzip2 decompression not supported")
+		return []byte{}, errors.New("bzip2 decompression (0x10) not supported")
 	case 0x80: // IMA ADPCM Stereo
-		return d2compression.WavDecompress(data[1:], 2)
+		res, err = d2compression.WavDecompress(data[1:], 2)
 	case 0x40: // IMA ADPCM Mono
-		return d2compression.WavDecompress(data[1:], 1)
+		res, err = d2compression.WavDecompress(data[1:], 1)
 	case 0x12:
-		return []byte{}, errors.New("lzma decompression not supported")
+		return []byte{}, errors.New("lzma decompression (0x12) not supported")
 	// Combos
 	case 0x22:
 		// sparse then zlib
-		return []byte{}, errors.New("sparse decompression + deflate decompression not supported")
+		return []byte{}, errors.New("sparse decompression + deflate decompression (0x22) not supported")
 	case 0x30:
 		// sparse then bzip2
-		return []byte{}, errors.New("sparse decompression + bzip2 decompression not supported")
+		return []byte{}, errors.New("sparse decompression + bzip2 decompression (0x30) not supported")
 	case 0x41:
-		sinput, err := d2compression.WavDecompress(d2compression.HuffmanDecompress(data[1:]), 1)
-		if err != nil {
-			return nil, err
+		huff := d2compression.HuffmanDecompress(data[1:])
+		if huff == nil {
+			return nil, errors.New("huffman decompression failed in combo 0x41")
 		}
-
-		tmp := make([]byte, len(sinput))
-
-		copy(tmp, sinput)
-
-		return tmp, nil
+		res, err = d2compression.WavDecompress(huff, 1)
 	case 0x48:
 		// byte[] result = PKDecompress(sinput, outputLength);
 		// return MpqWavCompression.Decompress(new MemoryStream(result), 1);
-		return []byte{}, errors.New("pk + mpqwav decompression not supported")
+		return []byte{}, errors.New("pk + mpqwav decompression (0x48) not supported")
 	case 0x81:
-		sinput, err := d2compression.WavDecompress(d2compression.HuffmanDecompress(data[1:]), 2)
-		if err != nil {
-			return nil, err
+		huff := d2compression.HuffmanDecompress(data[1:])
+		if huff == nil {
+			return nil, errors.New("huffman decompression failed in combo 0x81")
 		}
-
-		tmp := make([]byte, len(sinput))
-		copy(tmp, sinput)
-
-		return tmp, nil
+		res, err = d2compression.WavDecompress(huff, 2)
 	case 0x88:
 		// byte[] result = PKDecompress(sinput, outputLength);
 		// return MpqWavCompression.Decompress(new MemoryStream(result), 2);
-		return []byte{}, errors.New("pk + wav decompression not supported")
+		return []byte{}, errors.New("pk + wav decompression (0x88) not supported")
+	default:
+		return []byte{}, fmt.Errorf("decompression not supported for unknown compression type %X", compressionType)
 	}
 
-	return []byte{}, fmt.Errorf("decompression not supported for unknown compression type %X", compressionType)
+	if err != nil {
+		return nil, err
+	}
+
+	if uint32(len(res)) != expectedLength {
+		return nil, fmt.Errorf("decompressed size mismatch: got %d, expected %d", len(res), expectedLength)
+	}
+
+	return res, nil
 }
 
 func deflate(data []byte) ([]byte, error) {

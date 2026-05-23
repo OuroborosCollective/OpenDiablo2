@@ -443,6 +443,11 @@ func (v *MainMenu) onSinglePlayerClicked() {
 func (v *MainMenu) onGithubButtonClicked() {
 	url := "https://www.github.com/OpenDiablo2/OpenDiablo2"
 
+	if !d2util.IsValidBrowserURL(url) {
+		v.Error(fmt.Sprintf("invalid URL: %s", url))
+		return
+	}
+
 	var err error
 
 	switch runtime.GOOS {
