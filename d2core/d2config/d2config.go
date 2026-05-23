@@ -17,8 +17,6 @@ type Configuration struct {
 	FullScreen      bool
 	RunInBackground bool
 	VsyncEnabled    bool
-	Gamma           float64
-	Contrast        float64
 	Backend         string
 	ThreeDBias      float64
 	Gamma           float64

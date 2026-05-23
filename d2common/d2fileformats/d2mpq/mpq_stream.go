@@ -226,6 +226,16 @@ func (v *Stream) loadBlock(blockIndex, expectedLength uint32) ([]byte, error) {
 	}
 
 	offset += v.Block.FilePosition
+
+	// Physical file size boundary check
+	fi, err := v.MPQ.file.Stat()
+	if err != nil {
+		return []byte{}, err
+	}
+	if int64(offset+toRead) > fi.Size() {
+		return []byte{}, fmt.Errorf("read out of bounds: offset %d, size %d, file size %d", offset, toRead, fi.Size())
+	}
+
 	data := make([]byte, toRead)
 
 	if _, err := v.MPQ.file.Seek(int64(offset), io.SeekStart); err != nil {
@@ -268,13 +278,17 @@ func (v *Stream) loadBlock(blockIndex, expectedLength uint32) ([]byte, error) {
 }
 
 //nolint:gomnd,funlen,gocyclo // Will fix enum values later, can't help function length
-func decompressMulti(data []byte, expectedLength uint32) ([]byte, error) {
+func decompressMulti(data []byte, expectedLength uint32) (res []byte, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("decompression panic: %v", r)
+		}
+	}()
+
 	if len(data) == 0 {
 		return []byte{}, errors.New("empty data for decompression")
 	}
 	compressionType := data[0]
-	var res []byte
-	var err error
 
 	switch compressionType {
 	case 1: // Huffman
