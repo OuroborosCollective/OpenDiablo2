@@ -13,5 +13,6 @@ export enum PacketType {
   SavePlayer = 11,
   ServerFull = 12,
   AxiomaticStatus = 13,
+  AssetList = 14,
   UnknownPacketType = 666,
 }

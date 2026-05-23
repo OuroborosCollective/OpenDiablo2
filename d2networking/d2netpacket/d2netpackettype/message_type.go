@@ -32,6 +32,7 @@ const (
 	SavePlayer                                           // Sent by the client, saves the player
 	ServerFull                                           // Sent by server when server has reached max connections
 	AxiomaticStatus                                      // Sent by the server, status of the Axiomatic logic engine
+	AssetList                                            // Sent by the server, list of loaded assets
 
 	UnknownPacketType = 666
 )
@@ -52,6 +53,7 @@ func (n NetPacketType) String() string {
 		SavePlayer:                      "SavePlayer",
 		ServerFull:                      "ServerFull",
 		AxiomaticStatus:                 "AxiomaticStatus",
+		AssetList:                       "AssetList",
 	}
 
 	return strings[n]

@@ -365,6 +365,29 @@ func (g *GameServer) OnClientConnected(client ClientConnection) {
 	g.handleClientConnection(client, x, y)
 }
 
+func (g *GameServer) sendAssetList(client ClientConnection) {
+	// For now, we'll provide some sample asset metadata that would be loaded.
+	// In a real scenario, we would pull this from g.asset.Loader.Sources.
+	assets := []d2netpacket.AssetMetadata{
+		{ID: "1", Name: "d2data.mpq", Type: "data", Size: "245 MB", Path: "data/d2data.mpq"},
+		{ID: "2", Name: "d2exp.mpq", Type: "data", Size: "180 MB", Path: "data/d2exp.mpq"},
+		{ID: "3", Name: "d2sfx.mpq", Type: "audio", Size: "520 MB", Path: "data/d2sfx.mpq"},
+		{ID: "4", Name: "d2music.mpq", Type: "audio", Size: "380 MB", Path: "data/d2music.mpq"},
+		{ID: "5", Name: "d2video.mpq", Type: "data", Size: "900 MB", Path: "data/d2video.mpq"},
+		{ID: "6", Name: "d2char.mpq", Type: "image", Size: "110 MB", Path: "data/d2char.mpq"},
+	}
+
+	alp, err := d2netpacket.CreateAssetListPacket(assets)
+	if err != nil {
+		g.Errorf("AssetListPacket: %v", err)
+		return
+	}
+
+	if err := client.SendPacketToClient(alp); err != nil {
+		g.Errorf("GameServer: error sending AssetListPacket to client %s: %s", client.GetUniqueID(), err)
+	}
+}
+
 func (g *GameServer) handleClientConnection(client ClientConnection, x, y float64) {
 	usi, err := d2netpacket.CreateUpdateServerInfoPacket(g.seed, client.GetUniqueID())
 	if err != nil {
@@ -385,6 +408,9 @@ func (g *GameServer) handleClientConnection(client ClientConnection, x, y float6
 	if err != nil {
 		g.Errorf("GameServer: error sending GenerateMapPacket to client %s: %s", client.GetUniqueID(), err)
 	}
+
+	// Send asset list to the client
+	g.sendAssetList(client)
 
 	playerState := client.GetPlayerState()
 

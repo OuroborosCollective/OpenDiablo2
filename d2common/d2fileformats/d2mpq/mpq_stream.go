@@ -268,13 +268,17 @@ func (v *Stream) loadBlock(blockIndex, expectedLength uint32) ([]byte, error) {
 }
 
 //nolint:gomnd,funlen,gocyclo // Will fix enum values later, can't help function length
-func decompressMulti(data []byte, expectedLength uint32) ([]byte, error) {
+func decompressMulti(data []byte, expectedLength uint32) (res []byte, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("decompressMulti recovered from panic: %v", r)
+		}
+	}()
+
 	if len(data) == 0 {
 		return []byte{}, errors.New("empty data for decompression")
 	}
 	compressionType := data[0]
-	var res []byte
-	var err error
 
 	switch compressionType {
 	case 1: // Huffman

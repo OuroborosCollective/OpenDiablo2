@@ -4,8 +4,6 @@ package d2script
 
 import (
 	"errors"
-
-	"github.com/robertkrimen/otto"
 )
 
 var (
@@ -17,8 +15,8 @@ func (s *ScriptEngine) initJS() {
 }
 
 // ToValue returns an error in release builds.
-func (s *ScriptEngine) ToValue(source interface{}) (otto.Value, error) {
-	return otto.Value{}, ErrScriptingDisabled
+func (s *ScriptEngine) ToValue(source interface{}) (interface{}, error) {
+	return nil, ErrScriptingDisabled
 }
 
 // AddFunction does nothing in release builds.
@@ -26,7 +24,7 @@ func (s *ScriptEngine) AddFunction(name string, value interface{}) {
 }
 
 // RunScript returns an error in release builds.
-func (s *ScriptEngine) RunScript(fileName string) (*otto.Value, error) {
+func (s *ScriptEngine) RunScript(fileName string) (interface{}, error) {
 	return nil, ErrScriptingDisabled
 }
 

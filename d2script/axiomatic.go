@@ -47,13 +47,27 @@ type AxiomaticEventBus struct {
 	isFull           bool
 	globalSequenceID uint64
 	resonanceState   float64
+	subscribers      map[string]func(*IAxiomaticEvent)
 }
 
 func NewAxiomaticEventBus(size int) *AxiomaticEventBus {
 	return &AxiomaticEventBus{
 		ledger:        make([]*IAxiomaticEvent, size),
 		maxLedgerSize: size,
+		subscribers:   make(map[string]func(*IAxiomaticEvent)),
 	}
+}
+
+func (b *AxiomaticEventBus) Subscribe(id string, fn func(*IAxiomaticEvent)) {
+	b.Lock()
+	defer b.Unlock()
+	b.subscribers[id] = fn
+}
+
+func (b *AxiomaticEventBus) Unsubscribe(id string) {
+	b.Lock()
+	defer b.Unlock()
+	delete(b.subscribers, id)
 }
 
 func (b *AxiomaticEventBus) Publish(event *IAxiomaticEvent) {
@@ -78,6 +92,10 @@ func (b *AxiomaticEventBus) Publish(event *IAxiomaticEvent) {
 	b.writePointer = (b.writePointer + 1) % b.maxLedgerSize
 	if b.writePointer == 0 {
 		b.isFull = true
+	}
+
+	for _, sub := range b.subscribers {
+		sub(event)
 	}
 }
 
@@ -135,17 +153,73 @@ func (c *AREStateCompiler) Compile(states []AREStateData) []byte {
 	return buf
 }
 
+// IAxiomaticSystem represents a modular deterministic logic system.
+type IAxiomaticSystem interface {
+	Name() string
+	ProcessEvent(event *IAxiomaticEvent)
+}
+
 // BaalAalEngine wraps the Axiomatic components into a cohesive engine.
 type BaalAalEngine struct {
 	Compiler *AREStateCompiler
 	EventBus *AxiomaticEventBus
+	systems  map[string]IAxiomaticSystem
 }
 
 func NewBaalAalEngine() *BaalAalEngine {
-	return &BaalAalEngine{
+	e := &BaalAalEngine{
 		Compiler: &AREStateCompiler{},
 		EventBus: NewAxiomaticEventBus(50000), // Matching Wasd repo size
+		systems:  make(map[string]IAxiomaticSystem),
 	}
+
+	e.EventBus.Subscribe("BaalAalEngine", e.onEvent)
+
+	return e
+}
+
+func (e *BaalAalEngine) RegisterSystem(system IAxiomaticSystem) {
+	e.systems[system.Name()] = system
+}
+
+func (e *BaalAalEngine) onEvent(event *IAxiomaticEvent) {
+	for _, system := range e.systems {
+		system.ProcessEvent(event)
+	}
+}
+
+// KappaSystem implements deterministic coordinate tracking.
+type KappaSystem struct {
+	positions map[string][]int32 // ID -> [X, Y] in Kappa-space
+}
+
+func NewKappaSystem() *KappaSystem {
+	return &KappaSystem{
+		positions: make(map[string][]int32),
+	}
+}
+
+func (s *KappaSystem) Name() string {
+	return "KappaSystem"
+}
+
+func (s *KappaSystem) ProcessEvent(event *IAxiomaticEvent) {
+	if event.Type == "PlayerMove" {
+		if x, ok := event.Metadata["x"].(float64); ok {
+			if y, ok := event.Metadata["y"].(float64); ok {
+				id := event.Metadata["client_id"].(string)
+				s.positions[id] = []int32{
+					int32(math.Floor(x * KAPPA_SCALE)),
+					int32(math.Floor(y * KAPPA_SCALE)),
+				}
+			}
+		}
+	}
+}
+
+func (s *KappaSystem) GetPosition(id string) ([]int32, bool) {
+	pos, ok := s.positions[id]
+	return pos, ok
 }
 
 // ProcessCycle represents a single recursive BaalAal cycle.
