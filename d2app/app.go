@@ -634,8 +634,25 @@ func (a *App) ToCreateGame(filePath string, connType d2clientconnectiontype.Clie
 		a.Error(errorMessage)
 		a.ToMainMenu(errorMessage)
 	} else {
+		onSaveAudio := func(bgm, sfx float64) {
+			a.config.BgmVolume = bgm
+			a.config.SfxVolume = sfx
+			if err := a.config.Save(); err != nil {
+				a.Errorf("failed to save audio config: %v", err)
+			}
+		}
+
+		onSaveVideo := func(fullscreen, vsync bool) {
+			a.config.FullScreen = fullscreen
+			a.config.VsyncEnabled = vsync
+			if err := a.config.Save(); err != nil {
+				a.Errorf("failed to save video config: %v", err)
+			}
+		}
+
 		game, err := d2gamescreen.CreateGame(
 			a, a.asset, a.ui, a.renderer, a.inputManager, a.audio, gameClient, a.terminal, *a.Options.LogLevel, a.guiManager,
+			onSaveAudio, onSaveVideo,
 		)
 		if err != nil {
 			a.Error(err.Error())

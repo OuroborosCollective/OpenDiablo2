@@ -50,6 +50,8 @@ const (
 	optVideoPerspective
 	optVideoGamma
 	optVideoContrast
+	optVideoFullScreen
+	optVideoVsync
 	// automap
 	optAutomapSize
 	optAutomapFade
@@ -71,6 +73,8 @@ func NewEscapeMenu(navigator d2interface.Navigator,
 	assetManager *d2asset.AssetManager,
 	l d2util.LogLevel,
 	keyMap *KeyMap,
+	onSaveAudio func(bgm, sfx float64),
+	onSaveVideo func(fullscreen, vsync bool),
 ) *EscapeMenu {
 	m := &EscapeMenu{
 		audioProvider: audioProvider,
@@ -79,6 +83,8 @@ func NewEscapeMenu(navigator d2interface.Navigator,
 		guiManager:    guiManager,
 		assetManager:  assetManager,
 		keyMap:        keyMap,
+		onSaveAudio:   onSaveAudio,
+		onSaveVideo:   onSaveVideo,
 	}
 
 	keyBindingMenu := NewKeyBindingMenu(assetManager, renderer, uiManager, guiManager, keyMap, l, m)
@@ -117,7 +123,9 @@ type EscapeMenu struct {
 	keyMap         *KeyMap
 	keyBindingMenu *KeyBindingMenu
 
-	onCloseCb func()
+	onCloseCb   func()
+	onSaveAudio func(bgm, sfx float64)
+	onSaveVideo func(fullscreen, vsync bool)
 
 	*d2util.Logger
 }
@@ -216,6 +224,19 @@ func (m *EscapeMenu) newVideoOptionsLayout() *layout {
 		m.addEnumLabel(l, optVideoLightingQuality, "LIGHTING QUALITY", []string{"LOW", "HIGH"}, 1)
 		m.addEnumLabel(l, optVideoBlendedShadows, "BLENDED SHADOWS", []string{"ON", "OFF"}, 0)
 		m.addEnumLabel(l, optVideoPerspective, "PERSPECTIVE", []string{"ON", "OFF"}, 0)
+
+		fullscreenIdx := 1
+		if m.renderer.IsFullScreen() {
+			fullscreenIdx = 0
+		}
+		m.addEnumLabel(l, optVideoFullScreen, "FULL SCREEN", []string{"ON", "OFF"}, fullscreenIdx)
+
+		vsyncIdx := 1
+		if m.renderer.GetVSyncEnabled() {
+			vsyncIdx = 0
+		}
+		m.addEnumLabel(l, optVideoVsync, "VSYNC", []string{"ON", "OFF"}, vsyncIdx)
+
 		m.addEnumLabel(l, optVideoGamma, "GAMMA", []string{"0", "1", "2", "3", "4", "5"}, 0)
 		m.addEnumLabel(l, optVideoContrast, "CONTRAST", []string{"0", "1", "2", "3", "4", "5"}, 0)
 		m.addPreviousMenuLabel(l)
@@ -486,6 +507,20 @@ func (m *EscapeMenu) onUpdateValue(optID optionID, value string) {
 			}
 
 			m.audioProvider.SetVolumes(bgm, sfx)
+
+			if m.onSaveAudio != nil {
+				m.onSaveAudio(bgm, sfx)
+			}
+		}
+	case optVideoFullScreen:
+		m.renderer.SetFullScreen(value == "ON")
+		if m.onSaveVideo != nil {
+			m.onSaveVideo(m.renderer.IsFullScreen(), m.renderer.GetVSyncEnabled())
+		}
+	case optVideoVsync:
+		m.renderer.SetVSyncEnabled(value == "ON")
+		if m.onSaveVideo != nil {
+			m.onSaveVideo(m.renderer.IsFullScreen(), m.renderer.GetVSyncEnabled())
 		}
 	}
 }
