@@ -44,6 +44,11 @@ func (v *Source) Path() string {
 	return v.MPQ.Path()
 }
 
+// Listfile returns the list of files in the MPQ archive
+func (v *Source) Listfile() ([]string, error) {
+	return v.MPQ.Listfile()
+}
+
 // String returns the path
 func (v *Source) String() string {
 	return v.Path()

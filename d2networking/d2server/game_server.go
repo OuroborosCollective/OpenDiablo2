@@ -14,6 +14,10 @@ import (
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2util"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2asset"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2emergent"
+	"os"
+	"path/filepath"
+	"strconv"
+
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2hero"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2map/d2mapengine"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2map/d2mapgen"
@@ -376,6 +380,18 @@ func (g *GameServer) handleClientConnection(client ClientConnection, x, y float6
 		g.Errorf("GameServer: error sending UpdateServerInfoPacket to client %s: %s", client.GetUniqueID(), err)
 	}
 
+	// Send Asset Metadata
+	assets := g.getAssetMetadataList()
+	amp, err := d2netpacket.CreateAssetMetadataListPacket(assets)
+	if err != nil {
+		g.Errorf("AssetMetadataListPacket: %v", err)
+	} else {
+		err = client.SendPacketToClient(amp)
+		if err != nil {
+			g.Errorf("GameServer: error sending AssetMetadataListPacket to client %s: %s", client.GetUniqueID(), err)
+		}
+	}
+
 	gmp, err := d2netpacket.CreateGenerateMapPacket(getTownRegionFromAct(client.GetPlayerState().Act))
 	if err != nil {
 		g.Errorf("GenerateMapPacket: %v", err)
@@ -542,6 +558,55 @@ func (g *GameServer) OnPacketReceived(client ClientConnection, packet d2netpacke
 	}
 
 	return nil
+}
+
+func (g *GameServer) getAssetMetadataList() []d2netpacket.AssetMetadata {
+	var assets []d2netpacket.AssetMetadata
+
+	for _, source := range g.asset.Loader.Sources {
+		path := source.Path()
+		fi, err := os.Stat(path)
+		if err != nil {
+			continue
+		}
+
+		name := filepath.Base(path)
+		size := strconv.FormatInt(fi.Size()/(1024*1024), 10) + " MB"
+		assetType := "data"
+		ext := filepath.Ext(path)
+		if ext == ".mpq" {
+			// Try to guess content type from name if possible, or just use data
+			if name == "d2music.mpq" || name == "d2sfx.mpq" {
+				assetType = "audio"
+			}
+		}
+
+		assets = append(assets, d2netpacket.AssetMetadata{
+			ID:   name,
+			Name: name,
+			Type: assetType,
+			Size: size,
+			Path: path,
+		})
+
+		// Optionally list files from within the source if needed,
+		// but for the sidebar we probably just want the main archives first.
+		// If we want actual files:
+		/*
+			files, _ := source.Listfile()
+			for _, f := range files {
+				assets = append(assets, d2netpacket.AssetMetadata{
+					ID:   f,
+					Name: filepath.Base(f),
+					Type: string(types.Ext2AssetType(filepath.Ext(f))), // need to convert AssetType to string
+					Size: "N/A",
+					Path: f,
+				})
+			}
+		*/
+	}
+
+	return assets
 }
 
 func getTownRegionFromAct(act int) d2enum.RegionIdType {
