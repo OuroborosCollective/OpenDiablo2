@@ -17,6 +17,7 @@ func (a *App) initAxiomaticCommands() {
 		{"ax-pub", "publish an axiomatic event", []string{"type", "payload"}, a.axPublish},
 		{"ax-history", "show axiomatic event history", nil, a.axHistory},
 		{"ax-stats", "show axiomatic engine stats", nil, a.axStats},
+		{"ax-kappa", "show current kappa positions", nil, a.axKappa},
 	}
 
 	for _, cmd := range axCommands {
@@ -59,5 +60,20 @@ func (a *App) axHistory([]string) error {
 
 func (a *App) axStats([]string) error {
 	a.terminal.Infof("Axiomatic Engine (BaalAal) is active.")
+	return nil
+}
+
+func (a *App) axKappa([]string) error {
+	a.scriptEngine.Kappa.RLock()
+	defer a.scriptEngine.Kappa.RUnlock()
+
+	if len(a.scriptEngine.Kappa.Positions) == 0 {
+		a.terminal.Infof("No kappa positions tracked.")
+		return nil
+	}
+
+	for id, pos := range a.scriptEngine.Kappa.Positions {
+		a.terminal.Infof("Entity %s: %v", id, pos)
+	}
 	return nil
 }

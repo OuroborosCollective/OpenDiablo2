@@ -20,13 +20,17 @@ type ScriptEngine struct {
 
 	// BaalAal Engine
 	BaalAal *BaalAalEngine
+
+	// Kappa System
+	Kappa *KappaSystem
 }
 
 // CreateScriptEngine creates the script engine and returns a pointer to it.
 func CreateScriptEngine() *ScriptEngine {
 	s := &ScriptEngine{
 		isEvalAllowed: false,
-		BaalAal:      NewBaalAalEngine(),
+		BaalAal:       NewBaalAalEngine(),
+		Kappa:         NewKappaSystem(),
 	}
 	s.initJS()
 	return s
