@@ -100,6 +100,12 @@ func (b *AxiomaticEventBus) GetHistory() []*IAxiomaticEvent {
 	return history
 }
 
+func (b *AxiomaticEventBus) GetResonance() float64 {
+	b.RLock()
+	defer b.RUnlock()
+	return b.resonanceState
+}
+
 // Compile binary payload
 func (c *AREStateCompiler) Compile(states []AREStateData) []byte {
 	// Implementation of binary compilation
@@ -137,15 +143,25 @@ func (c *AREStateCompiler) Compile(states []AREStateData) []byte {
 
 // BaalAalEngine wraps the Axiomatic components into a cohesive engine.
 type BaalAalEngine struct {
+	sync.Mutex
 	Compiler *AREStateCompiler
 	EventBus *AxiomaticEventBus
+	rules    map[string]func(event *IAxiomaticEvent)
 }
 
 func NewBaalAalEngine() *BaalAalEngine {
 	return &BaalAalEngine{
 		Compiler: &AREStateCompiler{},
 		EventBus: NewAxiomaticEventBus(50000), // Matching Wasd repo size
+		rules:    make(map[string]func(event *IAxiomaticEvent)),
 	}
+}
+
+// RegisterRule binds a deterministic logic handler to an event type.
+func (e *BaalAalEngine) RegisterRule(eventType string, handler func(event *IAxiomaticEvent)) {
+	e.Lock()
+	defer e.Unlock()
+	e.rules[eventType] = handler
 }
 
 // ProcessCycle represents a single recursive BaalAal cycle.
@@ -158,5 +174,14 @@ func (e *BaalAalEngine) ProcessCycle(tick uint64) {
 	if e.EventBus.resonanceState == 0 {
 		e.EventBus.resonanceState = 1.0 // Seed if zero
 	}
-	e.EventBus.resonanceState = math.Mod(e.EventBus.resonanceState * 1.0001, 2147483647)
+	e.EventBus.resonanceState = math.Mod(e.EventBus.resonanceState*1.0001, 2147483647)
+
+	// Process pending events through rules
+	history := e.EventBus.GetHistory()
+	if len(history) > 0 {
+		lastEvent := history[len(history)-1]
+		if handler, ok := e.rules[lastEvent.Type]; ok {
+			handler(lastEvent)
+		}
+	}
 }

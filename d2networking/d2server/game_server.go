@@ -20,6 +20,7 @@ import (
 	"github.com/OpenDiablo2/OpenDiablo2/d2networking/d2client/d2clientconnectiontype"
 	"github.com/OpenDiablo2/OpenDiablo2/d2networking/d2netpacket"
 	"github.com/OpenDiablo2/OpenDiablo2/d2networking/d2netpacket/d2netpackettype"
+	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2emergent"
 	"github.com/OpenDiablo2/OpenDiablo2/d2networking/d2server/d2tcpclientconnection"
 	"github.com/OpenDiablo2/OpenDiablo2/d2script"
 )
@@ -54,6 +55,7 @@ type GameServer struct {
 	maxConnections    int
 	packetManagerChan chan ReceivedPacket
 	heroStateFactory  *d2hero.HeroStateFactory
+	emergentEngine    *d2emergent.ARELogikEngine
 
 	*d2util.Logger
 }
@@ -98,6 +100,7 @@ func NewGameServer(asset *d2asset.AssetManager,
 		scriptEngine:      d2script.CreateScriptEngine(),
 		seed:              time.Now().UnixNano(),
 		heroStateFactory:  heroStateFactory,
+		emergentEngine:    d2emergent.CreateARELogikEngine(l),
 	}
 
 	gameServer.Logger = d2util.NewLogger()
@@ -146,6 +149,7 @@ func (g *GameServer) Start() error {
 	g.listener = l
 
 	go g.packetManager()
+	go g.logicLoop()
 
 	go func() {
 		for {
@@ -193,6 +197,41 @@ func (g *GameServer) packetManager() {
 			if err != nil {
 				g.Errorf("failed to handle packet received from client %s: %v", p.Client.GetUniqueID(), err)
 			}
+		}
+	}
+}
+
+// logicLoop runs the axiomatic and emergent game logic at a fixed frequency.
+func (g *GameServer) logicLoop() {
+	const logicTickRate = 100 * time.Millisecond
+	ticker := time.NewTicker(logicTickRate)
+	defer ticker.Stop()
+
+	var tick uint64
+
+	for {
+		select {
+		case <-g.ctx.Done():
+			return
+		case <-ticker.C:
+			// Process Axiomatic Cycle
+			g.scriptEngine.BaalAal.ProcessCycle(tick)
+			g.emergentEngine.ProcessEmergence()
+
+			// Broadcast Axiomatic State occasionally (every 10 ticks)
+			if tick%10 == 0 {
+				resonance := g.scriptEngine.BaalAal.EventBus.GetResonance()
+				statusData, _ := json.Marshal(map[string]interface{}{
+					"tick":      tick,
+					"resonance": resonance,
+				})
+				g.sendPacketToClients(d2netpacket.NetPacket{
+					PacketType: d2netpackettype.AxiomaticStatus,
+					PacketData: statusData,
+				})
+			}
+
+			tick++
 		}
 	}
 }
