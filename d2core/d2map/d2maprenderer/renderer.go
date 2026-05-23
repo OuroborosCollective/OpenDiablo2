@@ -641,7 +641,7 @@ func (mr *MapRenderer) loadPaletteForAct(levelType d2enum.RegionIdType) (d2inter
 		palettePath = d2resource.PaletteAct3
 	case d2enum.RegionAct4Town, d2enum.RegionAct4Mesa, d2enum.RegionAct4Lava, d2enum.RegionAct5Lava:
 		palettePath = d2resource.PaletteAct4
-	case d2enum.RegionAct5Town, d2enum.RegionAct5Siege, d2enum.RegionAct5Barricade, d2enum.RegionAct5Temple,
+	case d2enum.RegonAct5Town, d2enum.RegionAct5Siege, d2enum.RegionAct5Barricade, d2enum.RegionAct5Temple,
 		d2enum.RegionAct5IceCaves, d2enum.RegionAct5Baal:
 		palettePath = d2resource.PaletteAct5
 	default:

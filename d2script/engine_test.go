@@ -6,6 +6,11 @@ import (
 )
 
 func TestScriptEngine_EvalTimeout(t *testing.T) {
+	// Skip this test in release builds as scripting is disabled anyway
+	if isRelease() {
+		t.Skip("skipping test in release build")
+	}
+
 	s := CreateScriptEngine()
 	s.AllowEval()
 
@@ -21,4 +26,10 @@ func TestScriptEngine_EvalTimeout(t *testing.T) {
 	if elapsed < 100*time.Millisecond {
 		t.Errorf("timeout too fast: %v", elapsed)
 	}
+}
+
+func isRelease() bool {
+	s := CreateScriptEngine()
+	_, err := s.Eval("1+1")
+	return err != nil && err.Error() == "arbitrary scripting disabled in release builds"
 }

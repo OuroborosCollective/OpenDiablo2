@@ -30,8 +30,8 @@ func (s *ScriptEngine) getVM() *otto.Otto {
 	return s.vm.(*otto.Otto)
 }
 
-// ToValue converts the given interface{} value to a otto.Value
-func (s *ScriptEngine) ToValue(source interface{}) (otto.Value, error) {
+// ToValue converts the given interface{} value to a JS value
+func (s *ScriptEngine) ToValue(source interface{}) (interface{}, error) {
 	return s.getVM().ToValue(source)
 }
 
@@ -44,7 +44,7 @@ func (s *ScriptEngine) AddFunction(name string, value interface{}) {
 }
 
 // RunScript runs the script file within the given path.
-func (s *ScriptEngine) RunScript(fileName string) (val *otto.Value, err error) {
+func (s *ScriptEngine) RunScript(fileName string) (val interface{}, err error) {
 	fileData, err := os.ReadFile(filepath.Clean(fileName))
 	if err != nil {
 		fmt.Printf("could not read script file: %s\n", err.Error())
@@ -78,7 +78,7 @@ func (s *ScriptEngine) RunScript(fileName string) (val *otto.Value, err error) {
 		return nil, err
 	}
 
-	return &res, nil
+	return res, nil
 }
 
 // Eval JS code with a timeout.

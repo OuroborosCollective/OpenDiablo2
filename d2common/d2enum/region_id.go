@@ -34,7 +34,7 @@ const (
 	RegionAct4Town
 	RegionAct4Mesa
 	RegionAct4Lava
-	RegionAct5Town
+	RegonAct5Town
 	RegionAct5Siege
 	RegionAct5Barricade
 	RegionAct5Temple

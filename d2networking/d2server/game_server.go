@@ -477,8 +477,26 @@ func (g *GameServer) OnPacketReceived(client ClientConnection, packet d2netpacke
 		playerState.X = movePacket.DestX
 		playerState.Y = movePacket.DestY
 
+		g.scriptEngine.DispatchEvent(&d2script.IAxiomaticEvent{
+			ID:      client.GetUniqueID(),
+			Type:    "MovePlayer",
+			Payload: movePacket,
+		})
+
 		g.sendPacketToClients(packet)
-	case d2netpackettype.CastSkill, d2netpackettype.SpawnItem:
+	case d2netpackettype.CastSkill:
+		g.scriptEngine.DispatchEvent(&d2script.IAxiomaticEvent{
+			ID:      client.GetUniqueID(),
+			Type:    "CastSkill",
+			Payload: packet.PacketData,
+		})
+		g.sendPacketToClients(packet)
+	case d2netpackettype.SpawnItem:
+		g.scriptEngine.DispatchEvent(&d2script.IAxiomaticEvent{
+			ID:      client.GetUniqueID(),
+			Type:    "SpawnItem",
+			Payload: packet.PacketData,
+		})
 		g.sendPacketToClients(packet)
 	case d2netpackettype.SavePlayer:
 		savePacket, err := d2netpacket.UnmarshalSavePlayer(packet.PacketData)
@@ -520,7 +538,7 @@ func getTownRegionFromAct(act int) d2enum.RegionIdType {
 	case 4:
 		return d2enum.RegionAct4Town
 	case 5:
-		return d2enum.RegionAct5Town
+		return d2enum.RegonAct5Town
 	default:
 		return d2enum.RegionAct1Town
 	}

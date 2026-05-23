@@ -41,7 +41,7 @@ func getMusicDefs() []MusicDef {
 		{d2enum.RegionAct4Town, false, BGMAct4Town4},
 		{d2enum.RegionAct4Mesa, false, BGMAct4Mesa},
 		{d2enum.RegionAct4Lava, false, BGMAct4Mesa},
-		{d2enum.RegionAct5Town, false, BGMAct5XTown},
+		{d2enum.RegonAct5Town, false, BGMAct5XTown},
 		{d2enum.RegionAct5Siege, false, BGMAct5Siege},
 		{d2enum.RegionAct5Barricade, false, BGMAct5Siege}, // ?
 		{d2enum.RegionAct5Temple, false, BGMAct5XTemple},
