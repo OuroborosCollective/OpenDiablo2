@@ -10,8 +10,6 @@ import (
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2loader/filesystem"
 
-	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2cache"
-	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2interface"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2loader/asset"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2loader/asset/types"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2resource"
@@ -19,7 +17,6 @@ import (
 )
 
 const (
-	defaultCacheBudget = 1024 * 1024 * 512
 	errFmtFileNotFound = "file not found: %s"
 )
 
@@ -41,7 +38,6 @@ func NewLoader(l d2util.LogLevel) (*Loader, error) {
 	loader.LoaderProviders[types.AssetSourceMPQ] = mpq.NewSource
 	loader.LoaderProviders[types.AssetSourceFileSystem] = filesystem.OnAddSource
 
-	loader.Cache = d2cache.CreateCache(defaultCacheBudget)
 	loader.Logger = d2util.NewLogger()
 
 	loader.Logger.SetPrefix(logPrefix)
@@ -50,12 +46,10 @@ func NewLoader(l d2util.LogLevel) (*Loader, error) {
 	return loader, nil
 }
 
-// Loader represents the manager that handles loading and caching assets with the asset Sources
-// that have been added
+// Loader represents the manager that handles loading assets from various Sources
 type Loader struct {
 	language *string
 	charset  *string
-	d2interface.Cache
 	*d2util.Logger
 	LoaderProviders map[types.SourceType]func(path string) (asset.Source, error)
 	Sources         []asset.Source
@@ -74,21 +68,11 @@ func (l *Loader) SetCharset(charset *string) {
 // Load attempts to load an asset with the given sub-path. The sub-path is relative to the root
 // of each asset source root (regardless of the type of asset source)
 func (l *Loader) Load(subPath string) (io.ReadSeeker, error) {
-	subPath = filepath.Clean(subPath)
+	subPath = l.preparePath(subPath)
 
-	if l.language != nil {
-		charset := l.charset
-		language := l.language
-
-		subPath = strings.ReplaceAll(subPath, fontToken, *charset)
-		subPath = strings.ReplaceAll(subPath, tableToken, *language)
-	}
-
-	// if it isn't in the cache, we check if each source can open the file
 	for idx := range l.Sources {
 		source := l.Sources[idx]
 
-		// if the source can open the file, then we cache it and return it
 		loadedAsset, err := source.Open(subPath)
 		if err != nil {
 			l.Debug(fmt.Sprintf("Checked `%s`, file not found", source.Path()))
@@ -129,25 +113,26 @@ func (l *Loader) AddSource(path string, sourceType types.SourceType) error {
 
 // Exists checks if the given path exists in at least one source
 func (l *Loader) Exists(subPath string) bool {
-	subPath = filepath.Clean(subPath)
+	subPath = l.preparePath(subPath)
 
-	if l.language != nil {
-		charset := l.charset
-		language := l.language
-
-		subPath = strings.ReplaceAll(subPath, fontToken, *charset)
-		subPath = strings.ReplaceAll(subPath, tableToken, *language)
-	}
-
-	// if it isn't in the cache, we check if each source can open the file
 	for idx := range l.Sources {
 		source := l.Sources[idx]
 
-		// if the source can open the file, then we cache it and return it
 		if source.Exists(subPath) {
 			return true
 		}
 	}
 
 	return false
+}
+
+func (l *Loader) preparePath(subPath string) string {
+	subPath = filepath.Clean(subPath)
+
+	if l.language != nil {
+		subPath = strings.ReplaceAll(subPath, fontToken, *l.charset)
+		subPath = strings.ReplaceAll(subPath, tableToken, *l.language)
+	}
+
+	return subPath
 }

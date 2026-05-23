@@ -29,7 +29,7 @@ const (
 func TestLoader_NewLoader(t *testing.T) {
 	loader, _ := NewLoader(d2util.LogLevelDefault)
 
-	if loader.Cache == nil {
+	if loader == nil {
 		t.Error("loader should not be nil")
 	}
 }
