@@ -18,6 +18,8 @@ func DefaultConfig() *Configuration {
 		TicksPerSecond:  -1,
 		RunInBackground: true,
 		VsyncEnabled:    true,
+		Gamma:           1.0,
+		Contrast:        1.0,
 		SfxVolume:       defaultSfxVolume,
 		BgmVolume:       defaultBgmVolume,
 		MpqPath:         "C:/Program Files (x86)/Diablo II",

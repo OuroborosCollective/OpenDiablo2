@@ -38,6 +38,8 @@ type Renderer struct {
 	renderCallback
 	*d2util.GlyphPrinter
 	lastRenderError error
+	gamma           float64
+	contrast        float64
 }
 
 // Update calls the game's logical update function (the `Advance` method)
@@ -71,10 +73,14 @@ func (r *Renderer) Layout(_, _ int) (width, height int) {
 // CreateRenderer creates an ebiten renderer instance
 func CreateRenderer(cfg *d2config.Configuration) (*Renderer, error) {
 	result := &Renderer{
+		gamma:        1.0,
+		contrast:     1.0,
 		GlyphPrinter: d2util.NewDebugPrinter(),
 	}
 
 	if cfg != nil {
+		result.gamma = cfg.Gamma
+		result.contrast = cfg.Contrast
 		config := cfg
 
 		ebiten.SetCursorMode(ebiten.CursorModeHidden)
@@ -180,4 +186,14 @@ func (r *Renderer) ShowPanicScreen(message string) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+// SetGamma sets the gamma value for the renderer
+func (r *Renderer) SetGamma(gamma float64) {
+	r.gamma = gamma
+}
+
+// SetContrast sets the contrast value for the renderer
+func (r *Renderer) SetContrast(contrast float64) {
+	r.contrast = contrast
 }

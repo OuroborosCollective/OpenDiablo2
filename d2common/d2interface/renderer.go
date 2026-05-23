@@ -21,4 +21,6 @@ type Renderer interface {
 	ShowPanicScreen(message string)
 	Print(target interface{}, str string) error
 	PrintAt(target interface{}, str string, x, y int)
+	SetGamma(gamma float64)
+	SetContrast(contrast float64)
 }

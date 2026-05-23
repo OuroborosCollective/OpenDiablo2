@@ -240,7 +240,7 @@ func (a *App) LoadConfig() (*d2config.Configuration, error) {
 
 	configAsset, _ := a.asset.LoadAsset(configBaseName)
 
-	config := &d2config.Configuration{}
+	config := d2config.DefaultConfig()
 	config.SetPath(d2config.DefaultConfigPath())
 
 	// create the default if not found
@@ -635,7 +635,7 @@ func (a *App) ToCreateGame(filePath string, connType d2clientconnectiontype.Clie
 		a.ToMainMenu(errorMessage)
 	} else {
 		game, err := d2gamescreen.CreateGame(
-			a, a.asset, a.ui, a.renderer, a.inputManager, a.audio, gameClient, a.terminal, *a.Options.LogLevel, a.guiManager,
+			a, a.asset, a.ui, a.renderer, a.inputManager, a.audio, gameClient, a.terminal, *a.Options.LogLevel, a.guiManager, a.config,
 		)
 		if err != nil {
 			a.Error(err.Error())
