@@ -181,3 +181,13 @@ func (r *Renderer) ShowPanicScreen(message string) {
 		panic(err)
 	}
 }
+
+// SetGamma sets the gamma for the renderer
+func (r *Renderer) SetGamma(gamma float64) {
+	// TODO: implement gamma
+}
+
+// SetContrast sets the contrast for the renderer
+func (r *Renderer) SetContrast(contrast float64) {
+	// TODO: implement contrast
+}

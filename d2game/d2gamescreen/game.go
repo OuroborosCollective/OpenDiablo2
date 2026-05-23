@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2asset"
+	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2config"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2gui"
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2math/d2vector"
@@ -84,6 +85,7 @@ func CreateGame(
 		uiManager:     ui,
 		guiManager:    guiManager,
 		keyMap:        keyMap,
+		config:        config,
 		logLevel:      l,
 	}
 	game.Logger = d2util.NewLogger()
@@ -117,6 +119,7 @@ type Game struct {
 	soundEnv             d2audio.SoundEnvironment
 	guiManager           *d2gui.GuiManager
 	keyMap               *d2player.KeyMap
+	config               *d2config.Configuration
 
 	renderer      d2interface.Renderer
 	inputManager  d2interface.InputManager

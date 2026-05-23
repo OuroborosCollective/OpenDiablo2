@@ -12,6 +12,7 @@ import (
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2asset"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2config"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2gui"
+	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2config"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2ui"
 )
 
@@ -129,6 +130,7 @@ type EscapeMenu struct {
 	assetManager   *d2asset.AssetManager
 	config         *d2config.Configuration
 	keyMap         *KeyMap
+	config         *d2config.Configuration
 	keyBindingMenu *KeyBindingMenu
 
 	bgmVolume float64
@@ -487,6 +489,34 @@ func (m *EscapeMenu) onHoverElement(id int) {
 	m.rightPent.SetPosition(x, y+spacerWidth)
 }
 
+
+func (m *EscapeMenu) getInitialValueIndex(optID optionID, values []string) int {
+	var val float64
+	switch optID {
+	case optAudioSoundVolume:
+		val = m.config.SfxVolume
+	case optAudioMusicVolume:
+		val = m.config.BgmVolume
+	case optAudio3dSound:
+		val = m.config.ThreeDBias
+	case optVideoGamma:
+		val = m.config.Gamma
+	case optVideoContrast:
+		val = m.config.Contrast
+	default:
+		return 0
+	}
+
+	index := int(val * 10)
+	if index < 0 {
+		index = 0
+	}
+	if index >= len(values) {
+		index = len(values) - 1
+	}
+	return index
+}
+
 func (m *EscapeMenu) onUpdateValue(optID optionID, value string) {
 	m.Infof("updating value %d with %s", optID, value)
 
@@ -510,6 +540,38 @@ func (m *EscapeMenu) onUpdateValue(optID optionID, value string) {
 	}
 }
 
+	switch optID {
+	case optAudioSoundVolume:
+		if val, err := strconv.ParseFloat(value, 64); err == nil {
+			m.config.SfxVolume = val / 10.0
+			m.audioProvider.SetVolumes(m.config.BgmVolume, m.config.SfxVolume)
+		}
+	case optAudioMusicVolume:
+		if val, err := strconv.ParseFloat(value, 64); err == nil {
+			m.config.BgmVolume = val / 10.0
+			m.audioProvider.SetVolumes(m.config.BgmVolume, m.config.SfxVolume)
+		}
+	case optAudio3dSound:
+		if val, err := strconv.ParseFloat(value, 64); err == nil {
+			m.config.ThreeDBias = val / 10.0
+			m.audioProvider.Set3DBias(m.config.ThreeDBias)
+		}
+	case optVideoGamma:
+		if val, err := strconv.ParseFloat(value, 64); err == nil {
+			m.config.Gamma = val / 10.0
+			m.renderer.SetGamma(m.config.Gamma)
+		}
+	case optVideoContrast:
+		if val, err := strconv.ParseFloat(value, 64); err == nil {
+			m.config.Contrast = val / 10.0
+			m.renderer.SetContrast(m.config.Contrast)
+		}
+	}
+
+	if err := m.config.Save(); err != nil {
+		m.Errorf("failed to save config: %v", err)
+	}
+}
 func (m *EscapeMenu) setLayout(id layoutID) {
 	layout := m.layouts[id]
 

@@ -189,3 +189,9 @@ func (eap *AudioProvider) createSoundEffect(sfx string, context *audio.Context,
 
 	return result
 }
+
+// Set3DBias sets the 3D bias for the audio provider
+func (eap *AudioProvider) Set3DBias(bias float64) {
+	// TODO: implement 3D bias
+	eap.Infof("Setting 3D bias to %f", bias)
+}
