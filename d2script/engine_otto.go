@@ -37,6 +37,8 @@ func (s *ScriptEngine) ToValue(source interface{}) (otto.Value, error) {
 
 // AddFunction adds the given function to the script engine with the given name.
 func (s *ScriptEngine) AddFunction(name string, value interface{}) {
+	s.BaalAal.RegisterHandler(name, value)
+
 	err := s.getVM().Set(name, value)
 	if err != nil {
 		fmt.Printf("could not add the '%s' function to the script engine", name)

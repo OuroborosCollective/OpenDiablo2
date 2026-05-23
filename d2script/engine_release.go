@@ -4,8 +4,6 @@ package d2script
 
 import (
 	"errors"
-
-	"github.com/robertkrimen/otto"
 )
 
 func (s *ScriptEngine) initJS() {
@@ -13,12 +11,13 @@ func (s *ScriptEngine) initJS() {
 }
 
 // ToValue returns an error in release builds.
-func (s *ScriptEngine) ToValue(source interface{}) (otto.Value, error) {
-	return otto.Value{}, errors.New("scripting disabled in release")
+func (s *ScriptEngine) ToValue(source interface{}) (interface{}, error) {
+	return nil, errors.New("scripting disabled in release")
 }
 
-// AddFunction does nothing in release builds.
+// AddFunction registers a handler in the BaalAal engine for release builds.
 func (s *ScriptEngine) AddFunction(name string, value interface{}) {
+	s.BaalAal.RegisterHandler(name, value)
 }
 
 // RunScript returns an error in release builds.

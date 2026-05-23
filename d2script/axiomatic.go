@@ -139,13 +139,30 @@ func (c *AREStateCompiler) Compile(states []AREStateData) []byte {
 type BaalAalEngine struct {
 	Compiler *AREStateCompiler
 	EventBus *AxiomaticEventBus
+	handlers map[string]interface{}
+	mu       sync.RWMutex
 }
 
 func NewBaalAalEngine() *BaalAalEngine {
 	return &BaalAalEngine{
 		Compiler: &AREStateCompiler{},
 		EventBus: NewAxiomaticEventBus(50000), // Matching Wasd repo size
+		handlers: make(map[string]interface{}),
 	}
+}
+
+// RegisterHandler registers a Go function as a logic handler.
+func (e *BaalAalEngine) RegisterHandler(name string, handler interface{}) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	e.handlers[name] = handler
+}
+
+// GetHandler returns a registered logic handler.
+func (e *BaalAalEngine) GetHandler(name string) interface{} {
+	e.mu.RLock()
+	defer e.mu.RUnlock()
+	return e.handlers[name]
 }
 
 // ProcessCycle represents a single recursive BaalAal cycle.

@@ -9,8 +9,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/robertkrimen/otto"
-
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2enum"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2util"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2asset"
@@ -117,12 +115,8 @@ func NewGameServer(asset *d2asset.AssetManager,
 
 	gameServer.mapEngines = append(gameServer.mapEngines, mapEngine)
 
-	gameServer.scriptEngine.AddFunction("getMapEngines", func(call otto.FunctionCall) otto.Value {
-		val, err := gameServer.scriptEngine.ToValue(gameServer.mapEngines)
-		if err != nil {
-			gameServer.Error(err.Error())
-		}
-		return val
+	gameServer.scriptEngine.AddFunction("getMapEngines", func() []*d2mapengine.MapEngine {
+		return gameServer.mapEngines
 	})
 
 	return gameServer, nil
