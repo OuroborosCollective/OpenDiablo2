@@ -43,6 +43,9 @@ func (a *App) initialize() error {
 	a.screen = d2screen.NewScreenManager(a.ui, *a.Options.LogLevel, a.guiManager)
 
 	a.audio.SetVolumes(a.config.BgmVolume, a.config.SfxVolume)
+	a.audio.Set3DBias(a.config.ThreeDBias)
+	a.renderer.SetGamma(a.config.Gamma)
+	a.renderer.SetContrast(a.config.Contrast)
 
 	if err := a.loadStrings(); err != nil {
 		return err

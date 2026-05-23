@@ -121,6 +121,10 @@ func (eap *AudioProvider) LoadSound(sfx string, loop, bgm bool) (d2interface.Sou
 func (eap *AudioProvider) SetVolumes(bgmVolume, sfxVolume float64) {
 	eap.sfxVolume = sfxVolume
 	eap.bgmVolume = bgmVolume
+
+	if eap.bgmAudio != nil {
+		eap.bgmAudio.SetVolume(bgmVolume)
+	}
 }
 
 // createSoundEffect creates a new instance of ebiten's sound effect implementation.
@@ -179,4 +183,10 @@ func (eap *AudioProvider) createSoundEffect(sfx string, context *audio.Context,
 	result.player = player
 
 	return result
+}
+
+// Set3DBias sets the 3D bias for the audio provider
+func (eap *AudioProvider) Set3DBias(bias float64) {
+	// TODO: implement 3D bias
+	eap.Infof("Setting 3D bias to %f", bias)
 }

@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2asset"
+	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2config"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2gui"
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2math/d2vector"
@@ -49,6 +50,7 @@ func CreateGame(
 	term d2interface.Terminal,
 	l d2util.LogLevel,
 	guiManager *d2gui.GuiManager,
+	config *d2config.Configuration,
 ) (*Game, error) {
 	// find the local player and its initial location
 	var startX, startY float64
@@ -75,7 +77,7 @@ func CreateGame(
 		ticksSinceLevelCheck: 0,
 		mapRenderer: d2maprenderer.CreateMapRenderer(asset, renderer,
 			gameClient.MapEngine, term, l, startX, startY),
-		escapeMenu:    d2player.NewEscapeMenu(navigator, renderer, audioProvider, ui, guiManager, asset, l, keyMap),
+		escapeMenu:    d2player.NewEscapeMenu(navigator, renderer, audioProvider, ui, guiManager, asset, l, keyMap, config),
 		inputManager:  inputManager,
 		audioProvider: audioProvider,
 		renderer:      renderer,
@@ -84,6 +86,7 @@ func CreateGame(
 		uiManager:     ui,
 		guiManager:    guiManager,
 		keyMap:        keyMap,
+		config:        config,
 		logLevel:      l,
 	}
 	game.Logger = d2util.NewLogger()
@@ -117,6 +120,7 @@ type Game struct {
 	soundEnv             d2audio.SoundEnvironment
 	guiManager           *d2gui.GuiManager
 	keyMap               *d2player.KeyMap
+	config               *d2config.Configuration
 
 	renderer      d2interface.Renderer
 	inputManager  d2interface.InputManager
