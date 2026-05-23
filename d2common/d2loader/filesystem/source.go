@@ -30,7 +30,7 @@ func (s *Source) Open(subPath string) (io.ReadSeeker, error) {
 // Exists returns true if the file exists
 func (s *Source) Exists(subPath string) bool {
 	_, err := os.Stat(s.fullPath(subPath))
-	return os.IsExist(err)
+	return err == nil
 }
 
 func (s *Source) fullPath(subPath string) string {
