@@ -1,7 +1,11 @@
 package d2emergent
 
 import (
+	"fmt"
+	"time"
+
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2util"
+	"github.com/OpenDiablo2/OpenDiablo2/d2script"
 )
 
 // ARELogikEngine represents the axiomatic Rekursion framework for emergent NPC behavior.
@@ -20,7 +24,7 @@ func CreateARELogikEngine(l d2util.LogLevel) *ARELogikEngine {
 	}
 }
 
-func (e *ARELogikEngine) ProcessEmergence() {
+func (e *ARELogikEngine) ProcessEmergence() *d2script.IAxiomaticEvent {
 	// Implement Ouroboros Collective Markgraf ARE-Logik
 	// This handles the endless world expansion and living NPC logic via resonance fluctuation.
 	e.GlobalResonance += 0.01
@@ -29,4 +33,11 @@ func (e *ARELogikEngine) ProcessEmergence() {
 	}
 
 	e.logger.Infof("ARE-Logik: Global Resonance updated to %.4f", e.GlobalResonance)
+
+	return &d2script.IAxiomaticEvent{
+		ID:        fmt.Sprintf("WorldEmergence-%d", time.Now().UnixNano()),
+		Type:      "WorldEmergence",
+		Timestamp: time.Now().Unix(),
+		Payload:   e.GlobalResonance,
+	}
 }
