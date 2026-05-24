@@ -74,7 +74,6 @@ func (b *AxiomaticEventBus) Unsubscribe(id string) {
 
 func (b *AxiomaticEventBus) Publish(event *IAxiomaticEvent) {
 	b.Lock()
-	defer b.Unlock()
 
 	event.SequenceID = b.globalSequenceID
 	b.globalSequenceID++
@@ -96,10 +95,28 @@ func (b *AxiomaticEventBus) Publish(event *IAxiomaticEvent) {
 		b.isFull = true
 	}
 
-	// Notify subscribers
+	// Snapshot subscribers to notify outside of main lock to prevent deadlocks
+	subs := make([]func(*IAxiomaticEvent), 0, len(b.subscribers))
 	for _, fn := range b.subscribers {
+		subs = append(subs, fn)
+	}
+	b.Unlock()
+
+	for _, fn := range subs {
 		fn(event)
 	}
+}
+
+func (b *AxiomaticEventBus) Subscribe(id string, fn func(*IAxiomaticEvent)) {
+	b.Lock()
+	defer b.Unlock()
+	b.subscribers[id] = fn
+}
+
+func (b *AxiomaticEventBus) Unsubscribe(id string) {
+	b.Lock()
+	defer b.Unlock()
+	delete(b.subscribers, id)
 }
 
 func (b *AxiomaticEventBus) calculateResonance(event *IAxiomaticEvent) float64 {
@@ -195,24 +212,29 @@ func (k *KappaSystem) processMove(event *IAxiomaticEvent) {
 
 // BaalAalEngine wraps the Axiomatic components into a cohesive engine.
 type BaalAalEngine struct {
-	Compiler    *AREStateCompiler
-	EventBus    *AxiomaticEventBus
-	KappaSystem *KappaSystem
+	Compiler           *AREStateCompiler
+	EventBus           *AxiomaticEventBus
+	rules              map[string][]func(*IAxiomaticEvent)
+	lastProcessedIndex int
 }
 
 func NewBaalAalEngine() *BaalAalEngine {
 	e := &BaalAalEngine{
 		Compiler: &AREStateCompiler{},
 		EventBus: NewAxiomaticEventBus(50000), // Matching Wasd repo size
+		rules:    make(map[string][]func(*IAxiomaticEvent)),
 	}
 	e.KappaSystem = NewKappaSystem(e)
 	return e
 }
 
+func (e *BaalAalEngine) RegisterRule(eventType string, handler func(*IAxiomaticEvent)) {
+	e.rules[eventType] = append(e.rules[eventType], handler)
+}
+
 // ProcessCycle represents a single recursive BaalAal cycle.
 func (e *BaalAalEngine) ProcessCycle(tick uint64) {
 	e.EventBus.Lock()
-	defer e.EventBus.Unlock()
 
 	// The boss Baal recursive snake self eating recursive cycle system
 	// Incorporate the resonance state back into itself
@@ -228,6 +250,26 @@ func (e *BaalAalEngine) ProcessCycle(tick uint64) {
 	if e.EventBus.resonanceState < 0 {
 		e.EventBus.resonanceState = 1.0
 	}
+
+	// Collect new events from ledger under lock
+	var newEvents []*IAxiomaticEvent
+	for e.lastProcessedIndex != e.EventBus.writePointer {
+		event := e.EventBus.ledger[e.lastProcessedIndex]
+		if event != nil {
+			newEvents = append(newEvents, event)
+		}
+		e.lastProcessedIndex = (e.lastProcessedIndex + 1) % e.EventBus.maxLedgerSize
+	}
+	e.EventBus.Unlock()
+
+	// Process new events outside of main lock to prevent deadlocks
+	for _, event := range newEvents {
+		if handlers, ok := e.rules[event.Type]; ok {
+			for _, handler := range handlers {
+				handler(event)
+			}
+		}
+	}
 }
 
 // GetStatus returns the current resonance and cycle.
@@ -237,4 +279,41 @@ func (e *BaalAalEngine) GetStatus() (float64, float64) {
 
 	resonance := math.Mod(e.EventBus.resonanceState, 1.0)
 	return resonance, e.EventBus.resonanceState
+}
+
+// KappaSystem implements deterministic coordinate tracking.
+type KappaSystem struct {
+	sync.RWMutex
+	Positions map[string][]int32
+	Compiler  *AREStateCompiler
+}
+
+func NewKappaSystem() *KappaSystem {
+	return &KappaSystem{
+		Positions: make(map[string][]int32),
+		Compiler:  &AREStateCompiler{},
+	}
+}
+
+func (k *KappaSystem) HandleMove(event *IAxiomaticEvent) {
+	if event.Metadata == nil {
+		return
+	}
+
+	clientID, ok := event.Metadata["client_id"].(string)
+	if !ok {
+		return
+	}
+
+	x, xOk := event.Metadata["x"].(float64)
+	y, yOk := event.Metadata["y"].(float64)
+
+	if xOk && yOk {
+		k.Lock()
+		defer k.Unlock()
+		k.Positions[clientID] = []int32{
+			k.Compiler.ToKappa(x),
+			k.Compiler.ToKappa(y),
+		}
+	}
 }

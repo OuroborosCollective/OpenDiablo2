@@ -110,6 +110,11 @@ func NewGameServer(asset *d2asset.AssetManager,
 	gameServer.Logger.SetPrefix(logPrefix)
 	gameServer.Logger.SetLevel(l)
 
+	// Initialize KappaSystem and register rules
+	kappa := d2script.NewKappaSystem()
+	gameServer.scriptEngine.BaalAal.RegisterRule("PlayerMove", kappa.HandleMove)
+	gameServer.scriptEngine.BaalAal.RegisterRule("PLAYER_MOVE", kappa.HandleMove)
+
 	mapEngine := d2mapengine.CreateMapEngine(l, asset)
 	mapEngine.SetSeed(gameServer.seed)
 	mapEngine.ResetMap(d2enum.RegionAct1Town, 100, 100)

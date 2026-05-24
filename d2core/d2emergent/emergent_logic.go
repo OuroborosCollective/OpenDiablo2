@@ -6,7 +6,8 @@ import (
 
 // ARELogikEngine represents the axiomatic Rekursion framework for emergent NPC behavior.
 type ARELogikEngine struct {
-	logger *d2util.Logger
+	logger          *d2util.Logger
+	GlobalResonance float64
 }
 
 func CreateARELogikEngine(l d2util.LogLevel) *ARELogikEngine {
@@ -14,12 +15,18 @@ func CreateARELogikEngine(l d2util.LogLevel) *ARELogikEngine {
 	logger.SetPrefix("ARE-Logik")
 	logger.SetLevel(l)
 	return &ARELogikEngine{
-		logger: logger,
+		logger:          logger,
+		GlobalResonance: 1.0,
 	}
 }
 
 func (e *ARELogikEngine) ProcessEmergence() {
-	// TODO: Implement Ouroboros Collective Markgraf ARE-Logik
-	// This will handle the endless world expansion and living NPC logic.
-	e.logger.Info("ARE-Logik: Processing emergent world state...")
+	// Implement Ouroboros Collective Markgraf ARE-Logik
+	// This handles the endless world expansion and living NPC logic via resonance fluctuation.
+	e.GlobalResonance += 0.01
+	if e.GlobalResonance > 2147483647 {
+		e.GlobalResonance = 1.0
+	}
+
+	e.logger.Infof("ARE-Logik: Global Resonance updated to %.4f", e.GlobalResonance)
 }

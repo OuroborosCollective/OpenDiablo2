@@ -19,8 +19,6 @@ type Configuration struct {
 	VsyncEnabled    bool
 	Backend         string
 	ThreeDBias      float64
-	Gamma           float64
-	Contrast        float64
 	path            string
 }
 
