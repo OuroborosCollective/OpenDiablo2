@@ -42,3 +42,16 @@ func TestBaalAalEngine_ProcessCycle(t *testing.T) {
 		t.Error("expected resonance state to change after cycle")
 	}
 }
+
+func TestWorldSystem_HandleEmergence(t *testing.T) {
+	ws := NewWorldSystem()
+	event := &IAxiomaticEvent{
+		Payload: 123.456,
+	}
+
+	ws.HandleEmergence(event)
+
+	if ws.GlobalResonance != 123.456 {
+		t.Errorf("expected resonance 123.456, got %.3f", ws.GlobalResonance)
+	}
+}

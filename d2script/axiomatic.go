@@ -219,6 +219,40 @@ func (e *BaalAalEngine) ProcessCycle(tick uint64) {
 	}
 }
 
+// CombatSystem handles axiomatic combat events.
+type CombatSystem struct{}
+
+func (c *CombatSystem) HandleCast(event *IAxiomaticEvent) {
+	// Logic for skill casting will be integrated here
+}
+
+// ItemSystem handles axiomatic item events.
+type ItemSystem struct{}
+
+func (i *ItemSystem) HandleSpawn(event *IAxiomaticEvent) {
+	// Logic for item spawning will be integrated here
+}
+
+// WorldSystem tracks global deterministic world state.
+type WorldSystem struct {
+	sync.RWMutex
+	GlobalResonance float64
+}
+
+func NewWorldSystem() *WorldSystem {
+	return &WorldSystem{
+		GlobalResonance: 1.0,
+	}
+}
+
+func (w *WorldSystem) HandleEmergence(event *IAxiomaticEvent) {
+	if resonance, ok := event.Payload.(float64); ok {
+		w.Lock()
+		defer w.Unlock()
+		w.GlobalResonance = resonance
+	}
+}
+
 // GetStatus returns the current resonance and cycle.
 func (e *BaalAalEngine) GetStatus() (float64, float64) {
 	e.EventBus.RLock()
