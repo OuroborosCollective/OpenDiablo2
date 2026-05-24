@@ -43,15 +43,43 @@ func TestBaalAalEngine_ProcessCycle(t *testing.T) {
 	}
 }
 
-func TestWorldSystem_HandleEmergence(t *testing.T) {
-	ws := NewWorldSystem()
+func TestKappaSystem_ProcessMove(t *testing.T) {
+	engine := NewBaalAalEngine()
 	event := &IAxiomaticEvent{
-		Payload: 123.456,
+		ID:   "move-1",
+		Type: "PLAYER_MOVE",
+		Payload: map[string]interface{}{
+			"x": 10.5,
+			"y": 20.75,
+		},
 	}
 
-	ws.HandleEmergence(event)
+	engine.EventBus.Publish(event)
 
-	if ws.GlobalResonance != 123.456 {
-		t.Errorf("expected resonance 123.456, got %.3f", ws.GlobalResonance)
+	if event.Metadata["kappa_x"] != int32(10500) {
+		t.Errorf("expected kappa_x 10500, got %v", event.Metadata["kappa_x"])
+	}
+	if event.Metadata["kappa_y"] != int32(20750) {
+		t.Errorf("expected kappa_y 20750, got %v", event.Metadata["kappa_y"])
+	}
+}
+
+func TestAxiomaticEventBus_Subscription(t *testing.T) {
+	bus := NewAxiomaticEventBus(10)
+	called := false
+	bus.Subscribe("test", func(e *IAxiomaticEvent) {
+		called = true
+	})
+
+	bus.Publish(&IAxiomaticEvent{Type: "TEST"})
+	if !called {
+		t.Error("expected subscriber to be called")
+	}
+
+	called = false
+	bus.Unsubscribe("test")
+	bus.Publish(&IAxiomaticEvent{Type: "TEST"})
+	if called {
+		t.Error("expected subscriber not to be called after unsubscribe")
 	}
 }

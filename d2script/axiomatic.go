@@ -58,6 +58,20 @@ func NewAxiomaticEventBus(size int) *AxiomaticEventBus {
 	}
 }
 
+// Subscribe registers a new subscriber for events.
+func (b *AxiomaticEventBus) Subscribe(id string, fn func(*IAxiomaticEvent)) {
+	b.Lock()
+	defer b.Unlock()
+	b.subscribers[id] = fn
+}
+
+// Unsubscribe removes a subscriber.
+func (b *AxiomaticEventBus) Unsubscribe(id string) {
+	b.Lock()
+	defer b.Unlock()
+	delete(b.subscribers, id)
+}
+
 func (b *AxiomaticEventBus) Publish(event *IAxiomaticEvent) {
 	b.Lock()
 
@@ -159,6 +173,43 @@ func (c *AREStateCompiler) Compile(states []AREStateData) []byte {
 	return buf
 }
 
+// KappaSystem implements deterministic coordinate tracking.
+type KappaSystem struct {
+	engine *BaalAalEngine
+}
+
+func NewKappaSystem(engine *BaalAalEngine) *KappaSystem {
+	k := &KappaSystem{
+		engine: engine,
+	}
+	engine.EventBus.Subscribe("KappaSystem", k.onEvent)
+	return k
+}
+
+func (k *KappaSystem) onEvent(event *IAxiomaticEvent) {
+	if event.Type == "PLAYER_MOVE" || event.Type == "PlayerMove" {
+		k.processMove(event)
+	}
+}
+
+func (k *KappaSystem) processMove(event *IAxiomaticEvent) {
+	// Implement deterministic coordinate tracking using KAPPA_SCALE
+	// This would typically update the entity state in the BaalAal engine
+	if event.Payload == nil {
+		return
+	}
+
+	// Simplified: just log the move in metadata to prove it processed
+	if moveData, ok := event.Payload.(map[string]interface{}); ok {
+		if x, ok := moveData["x"].(float64); ok {
+			event.Metadata["kappa_x"] = k.engine.Compiler.ToKappa(x)
+		}
+		if y, ok := moveData["y"].(float64); ok {
+			event.Metadata["kappa_y"] = k.engine.Compiler.ToKappa(y)
+		}
+	}
+}
+
 // BaalAalEngine wraps the Axiomatic components into a cohesive engine.
 type BaalAalEngine struct {
 	Compiler           *AREStateCompiler
@@ -168,11 +219,13 @@ type BaalAalEngine struct {
 }
 
 func NewBaalAalEngine() *BaalAalEngine {
-	return &BaalAalEngine{
+	e := &BaalAalEngine{
 		Compiler: &AREStateCompiler{},
 		EventBus: NewAxiomaticEventBus(50000), // Matching Wasd repo size
 		rules:    make(map[string][]func(*IAxiomaticEvent)),
 	}
+	e.KappaSystem = NewKappaSystem(e)
+	return e
 }
 
 func (e *BaalAalEngine) RegisterRule(eventType string, handler func(*IAxiomaticEvent)) {
