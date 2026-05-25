@@ -22,7 +22,7 @@ func (mpq *MPQ) readHashTable() error {
 		return err
 	}
 
-	hashData, err := decryptTable(mpq.file, mpq.header.HashTableEntries, "(hash table)")
+	hashData, err := mpq.crypter.decryptTable(mpq.file, mpq.header.HashTableEntries, "(hash table)")
 	if err != nil {
 		return err
 	}

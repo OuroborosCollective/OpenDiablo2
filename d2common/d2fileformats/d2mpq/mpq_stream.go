@@ -34,7 +34,7 @@ func CreateStream(mpq *MPQ, block *Block, fileName string) (*Stream, error) {
 	}
 
 	if s.Block.HasFlag(FileFixKey) {
-		s.Block.calculateEncryptionSeed(fileName)
+		s.Block.calculateEncryptionSeed(s.MPQ.crypter, fileName)
 	}
 
 	s.Size = 0x200 << s.MPQ.header.BlockSize //nolint:gomnd // MPQ magic
@@ -71,7 +71,7 @@ func (v *Stream) loadBlockOffsets() error {
 	}
 
 	if v.Block.HasFlag(FileEncrypted) {
-		decrypt(v.Positions, v.Block.EncryptionSeed-1)
+		v.MPQ.crypter.decrypt(v.Positions, v.Block.EncryptionSeed-1)
 
 		blockPosSize := blockPositionCount << 2 //nolint:gomnd // MPQ magic
 		if v.Positions[0] != blockPosSize {
@@ -251,7 +251,7 @@ func (v *Stream) loadBlock(blockIndex, expectedLength uint32) ([]byte, error) {
 			return []byte{}, errors.New("unable to determine encryption key")
 		}
 
-		decryptBytes(data, blockIndex+v.Block.EncryptionSeed)
+		v.MPQ.crypter.decryptBytes(data, blockIndex+v.Block.EncryptionSeed)
 	}
 
 	if v.Block.HasFlag(FileCompress) {
