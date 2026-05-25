@@ -107,21 +107,9 @@ func (b *AxiomaticEventBus) Publish(event *IAxiomaticEvent) {
 	}
 }
 
-func (b *AxiomaticEventBus) Subscribe(id string, fn func(*IAxiomaticEvent)) {
-	b.Lock()
-	defer b.Unlock()
-	b.subscribers[id] = fn
-}
-
-func (b *AxiomaticEventBus) Unsubscribe(id string) {
-	b.Lock()
-	defer b.Unlock()
-	delete(b.subscribers, id)
-}
-
 func (b *AxiomaticEventBus) calculateResonance(event *IAxiomaticEvent) float64 {
 	// Simplified hash for resonance calculation
-	return float64(event.SequenceID % 10000) / 10000.0
+	return float64(event.SequenceID%10000) / 10000.0
 }
 
 func (b *AxiomaticEventBus) GetHistory() []*IAxiomaticEvent {
@@ -216,6 +204,7 @@ type BaalAalEngine struct {
 	EventBus           *AxiomaticEventBus
 	rules              map[string][]func(*IAxiomaticEvent)
 	lastProcessedIndex int
+	KappaSystem        *KappaSystem
 }
 
 func NewBaalAalEngine() *BaalAalEngine {
@@ -313,41 +302,4 @@ func (e *BaalAalEngine) GetStatus() (float64, float64) {
 
 	resonance := math.Mod(e.EventBus.resonanceState, 1.0)
 	return resonance, e.EventBus.resonanceState
-}
-
-// KappaSystem implements deterministic coordinate tracking.
-type KappaSystem struct {
-	sync.RWMutex
-	Positions map[string][]int32
-	Compiler  *AREStateCompiler
-}
-
-func NewKappaSystem() *KappaSystem {
-	return &KappaSystem{
-		Positions: make(map[string][]int32),
-		Compiler:  &AREStateCompiler{},
-	}
-}
-
-func (k *KappaSystem) HandleMove(event *IAxiomaticEvent) {
-	if event.Metadata == nil {
-		return
-	}
-
-	clientID, ok := event.Metadata["client_id"].(string)
-	if !ok {
-		return
-	}
-
-	x, xOk := event.Metadata["x"].(float64)
-	y, yOk := event.Metadata["y"].(float64)
-
-	if xOk && yOk {
-		k.Lock()
-		defer k.Unlock()
-		k.Positions[clientID] = []int32{
-			k.Compiler.ToKappa(x),
-			k.Compiler.ToKappa(y),
-		}
-	}
 }
