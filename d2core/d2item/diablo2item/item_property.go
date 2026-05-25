@@ -1,7 +1,8 @@
 package diablo2item
 
 import (
-	"math/rand"
+	"crypto/rand"
+	"math/big"
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2records"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2stats"
@@ -166,6 +167,21 @@ func (p *Property) eval(propStatIdx, previousFnID int) (stat d2stats.Stat, funcI
 	return stat, funcID
 }
 
+func secureRandomInt(min, max int) int {
+	if max < min {
+		min, max = max, min
+	}
+
+	rangeSize := max - min + 1
+	n, err := rand.Int(rand.Reader, big.NewInt(int64(rangeSize)))
+	if err != nil {
+		// This should not happen in normal operation
+		panic(err)
+	}
+
+	return int(n.Int64()) + min
+}
+
 // fnValuesToStat Applies a value to a stat, can use SetX parameter.
 func (p *Property) fnValuesToStat(iscRecord *d2records.ItemStatCostRecord) d2stats.Stat {
 	// the only special case to handle for this function is for
@@ -188,12 +204,7 @@ func (p *Property) fnValuesToStat(iscRecord *d2records.ItemStatCostRecord) d2sta
 		min, max = p.inputParams[0], p.inputParams[1]
 	}
 
-	if max < min {
-		min, max = max, min
-	}
-
-	// nolint:gosec // not concerned with crypto-strong randomness
-	statValue = float64(rand.Intn(max-min+1) + min)
+	statValue = float64(secureRandomInt(min, max))
 
 	return p.factory.stat.NewStat(iscRecord.Name, statValue, propParam)
 }
@@ -209,8 +220,7 @@ func (p *Property) fnComputeInteger() int {
 		min, max = p.inputParams[0], p.inputParams[1]
 	}
 
-	// nolint:gosec // not concerned with crypto-strong randomness
-	statValue := rand.Intn(max-min+1) + min
+	statValue := secureRandomInt(min, max)
 
 	return statValue
 }
@@ -250,8 +260,7 @@ func (p *Property) fnClassSkillTab(iscRecord *d2records.ItemStatCostRecord) d2st
 	skillTabIdx := float64(param % skillTabsPerClass)
 	classIdx := float64(param / skillTabsPerClass)
 
-	// nolint:gosec // not concerned with crypto-strong randomness
-	level := float64(rand.Intn(max-min+1) + min)
+	level := float64(secureRandomInt(min, max))
 
 	return p.factory.stat.NewStat(iscRecord.Name, level, classIdx, skillTabIdx)
 }
@@ -282,8 +291,7 @@ func (p *Property) fnRandomSkill(iscRecord *d2records.ItemStatCostRecord) d2stat
 	default:
 		skillLevel = float64(p.inputParams[0])
 		min, max := p.inputParams[1], p.inputParams[2]
-		// nolint:gosec // not concerned with crypto-strong randomness
-		skillID = float64(rand.Intn(max-min+1) + min)
+		skillID = float64(secureRandomInt(min, max))
 	}
 
 	return p.factory.stat.NewStat(iscRecord.Name, skillLevel, skillID, invalidHeroIndex)
@@ -327,8 +335,7 @@ func (p *Property) fnBoolean() bool {
 		min, max = p.inputParams[0], p.inputParams[1]
 	}
 
-	// nolint:gosec // not concerned with crypto-strong randomness
-	statValue := rand.Intn(max-min+1) + min
+	statValue := secureRandomInt(min, max)
 
 	return statValue > 0
 }
@@ -354,8 +361,7 @@ func (p *Property) fnClassSkills(
 		min, max = p.inputParams[0], p.inputParams[1]
 	}
 
-	// nolint:gosec // not concerned with crypto-strong randomness
-	statValue := rand.Intn(max-min+1) + min
+	statValue := secureRandomInt(min, max)
 	classIdx = propStatRecord.Value
 
 	return p.factory.stat.NewStat(iscRecord.Name, float64(statValue), float64(classIdx))
