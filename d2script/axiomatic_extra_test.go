@@ -74,7 +74,8 @@ func TestBaalAalEngine_RecursivePublish(t *testing.T) {
 }
 
 func TestKappaSystem_HandleMove(t *testing.T) {
-	ks := NewKappaSystem()
+	engine := NewBaalAalEngine()
+	ks := engine.KappaSystem
 	event := &IAxiomaticEvent{
 		Metadata: map[string]interface{}{
 			"client_id": "player-1",
