@@ -111,7 +111,7 @@ func NewGameServer(asset *d2asset.AssetManager,
 	gameServer.Logger.SetLevel(l)
 
 	// Initialize Axiomatic Systems and register rules
-	kappa := d2script.NewKappaSystem()
+	kappa := gameServer.scriptEngine.BaalAal.KappaSystem
 	worldSys := d2script.NewWorldSystem()
 	combatSys := &d2script.CombatSystem{}
 	itemSys := &d2script.ItemSystem{}

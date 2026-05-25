@@ -74,8 +74,14 @@ func TestBaalAalEngine_RecursivePublish(t *testing.T) {
 }
 
 func TestKappaSystem_HandleMove(t *testing.T) {
-	ks := NewKappaSystem()
+	engine := NewBaalAalEngine()
+	ks := NewKappaSystem(engine)
 	event := &IAxiomaticEvent{
+		Type: "PlayerMove",
+		Payload: map[string]interface{}{
+			"x": 10.5,
+			"y": 20.7,
+		},
 		Metadata: map[string]interface{}{
 			"client_id": "player-1",
 			"x":         10.5,
@@ -85,7 +91,9 @@ func TestKappaSystem_HandleMove(t *testing.T) {
 
 	ks.HandleMove(event)
 
+	ks.RLock()
 	pos, ok := ks.Positions["player-1"]
+	ks.RUnlock()
 	if !ok {
 		t.Fatal("expected position for player-1")
 	}
