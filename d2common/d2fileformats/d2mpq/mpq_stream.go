@@ -34,7 +34,7 @@ func CreateStream(mpq *MPQ, block *Block, fileName string) (*Stream, error) {
 	}
 
 	if s.Block.HasFlag(FileFixKey) {
-		s.Block.calculateEncryptionSeed(fileName)
+		s.Block.calculateEncryptionSeed(s.MPQ.crypto, fileName)
 	}
 
 	s.Size = 0x200 << s.MPQ.header.BlockSize //nolint:gomnd // MPQ magic
@@ -71,7 +71,7 @@ func (v *Stream) loadBlockOffsets() error {
 	}
 
 	if v.Block.HasFlag(FileEncrypted) {
-		decrypt(v.Positions, v.Block.EncryptionSeed-1)
+		v.MPQ.crypto.decrypt(v.Positions, v.Block.EncryptionSeed-1)
 
 		blockPosSize := blockPositionCount << 2 //nolint:gomnd // MPQ magic
 		if v.Positions[0] != blockPosSize {
@@ -287,7 +287,7 @@ func (v *Stream) loadBlock(blockIndex, expectedLength uint32) ([]byte, error) {
 			return []byte{}, errors.New("unable to determine encryption key")
 		}
 
-		decryptBytes(data, blockIndex+v.Block.EncryptionSeed)
+		v.MPQ.crypto.decryptBytes(data, blockIndex+v.Block.EncryptionSeed)
 	}
 
 	if v.Block.HasFlag(FileCompress) {
@@ -381,9 +381,17 @@ func decompressByMask(mask byte, data []byte, expectedLength uint32) ([]byte, er
 	case 0x30:
 		return nil, errors.New("sparse decompression + bzip2 decompression (0x30) not supported")
 	case 0x48:
-		return nil, errors.New("pk + mpqwav decompression (0x48) not supported")
+		return []byte{}, errors.New("pk + mpqwav decompression (0x48) not supported")
+	case 0x81:
+		huff := d2compression.HuffmanDecompress(data[1:])
+		if huff == nil {
+			return nil, errors.New("huffman decompression failed in combo 0x81")
+		}
+		res, err = d2compression.WavDecompress(huff, 2)
 	case 0x88:
-		return nil, errors.New("pk + wav decompression (0x88) not supported")
+		return []byte{}, errors.New("pk + wav decompression (0x88) not supported")
+	default:
+		return []byte{}, fmt.Errorf("decompression not supported for unknown compression type %X", compressionType)
 	}
 
 	return nil, fmt.Errorf("decompression not supported for unknown compression type %X", mask)

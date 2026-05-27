@@ -158,21 +158,26 @@ func (v *TextBox) GetText() string {
 }
 
 // SetText sets the text box's text
+//
 //nolint:gomnd // Built-in values
 func (v *TextBox) SetText(newText string) {
-	result := ""
+	var builder strings.Builder
+
+	builder.Grow(15)
 
 	for _, c := range newText {
-		if !strings.Contains(v.filter, string(c)) {
+		if builder.Len() >= 15 {
+			break
+		}
+
+		if strings.IndexRune(v.filter, c) < 0 {
 			continue
 		}
 
-		result += string(c)
+		builder.WriteRune(c)
 	}
 
-	if len(result) > 15 {
-		result = result[0:15]
-	}
+	result := builder.String()
 
 	v.text = result
 
@@ -197,6 +202,7 @@ func (v *TextBox) GetSize() (width, height int) {
 }
 
 // SetPosition sets the position of the text box
+//
 //nolint:gomnd // Built-in values
 func (v *TextBox) SetPosition(x, y int) {
 	lw, _ := v.textLabel.GetSize()

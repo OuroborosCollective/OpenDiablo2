@@ -207,8 +207,10 @@ func (ds1 *DS1) loadFileList(br *d2datautils.StreamReader) error {
 
 	ds1.Files = make([]string, numberOfFiles)
 
+	buf := make([]byte, 0, 128)
+
 	for i := 0; i < int(numberOfFiles); i++ {
-		ds1.Files[i] = ""
+		buf = buf[:0]
 
 		for {
 			ch, err := br.ReadByte()
@@ -220,8 +222,10 @@ func (ds1 *DS1) loadFileList(br *d2datautils.StreamReader) error {
 				break
 			}
 
-			ds1.Files[i] += string(ch)
+			buf = append(buf, ch)
 		}
+
+		ds1.Files[i] = string(buf)
 	}
 
 	return nil

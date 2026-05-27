@@ -108,6 +108,7 @@ type ButtonLayout struct {
 	Tooltip          int
 	TooltipXOffset   int
 	TooltipYOffset   int
+	NumFrames        int
 }
 
 const (
@@ -337,6 +338,7 @@ func getButtonLayouts() map[ButtonType]*ButtonLayout {
 			DisabledFrame:    buttonBuySellDisabledFrame,
 			DisabledColor:    lightGreyAlpha75,
 			ResourceName:     d2resource.BuySellButton,
+			NumFrames:        2,
 			PaletteName:      d2resource.PaletteUnits,
 			Toggleable:       true,
 			FontPath:         d2resource.Font30,
@@ -356,6 +358,7 @@ func getButtonLayouts() map[ButtonType]*ButtonLayout {
 			DisabledFrame:    buttonBuySellDisabledFrame,
 			DisabledColor:    lightGreyAlpha75,
 			ResourceName:     d2resource.BuySellButton,
+			NumFrames:        2,
 			PaletteName:      d2resource.PaletteUnits,
 			Toggleable:       true,
 			FontPath:         d2resource.Font30,
@@ -375,6 +378,7 @@ func getButtonLayouts() map[ButtonType]*ButtonLayout {
 			DisabledFrame:    buttonBuySellDisabledFrame,
 			DisabledColor:    lightGreyAlpha75,
 			ResourceName:     d2resource.BuySellButton,
+			NumFrames:        2,
 			PaletteName:      d2resource.PaletteUnits,
 			Toggleable:       true,
 			FontPath:         d2resource.Font30,
@@ -394,6 +398,7 @@ func getButtonLayouts() map[ButtonType]*ButtonLayout {
 			DisabledFrame:    buttonBuySellDisabledFrame,
 			DisabledColor:    lightGreyAlpha75,
 			ResourceName:     d2resource.BuySellButton,
+			NumFrames:        2,
 			PaletteName:      d2resource.PaletteUnits,
 			Toggleable:       true,
 			FontPath:         d2resource.Font30,
@@ -413,6 +418,7 @@ func getButtonLayouts() map[ButtonType]*ButtonLayout {
 			DisabledFrame:    buttonBuySellDisabledFrame,
 			DisabledColor:    lightGreyAlpha75,
 			ResourceName:     d2resource.BuySellButton,
+			NumFrames:        2,
 			PaletteName:      d2resource.PaletteUnits,
 			Toggleable:       true,
 			FontPath:         d2resource.Font30,
@@ -432,6 +438,7 @@ func getButtonLayouts() map[ButtonType]*ButtonLayout {
 			DisabledFrame:    buttonBuySellDisabledFrame,
 			DisabledColor:    lightGreyAlpha75,
 			ResourceName:     d2resource.BuySellButton,
+			NumFrames:        2,
 			PaletteName:      d2resource.PaletteUnits,
 			Toggleable:       true,
 			FontPath:         d2resource.Font30,
@@ -452,6 +459,7 @@ func getButtonLayouts() map[ButtonType]*ButtonLayout {
 			DisabledColor:    whiteAlpha100,
 			BaseFrame:        buttonUpArrowBaseFrame,
 			ResourceName:     d2resource.UpDownArrows,
+			NumFrames:        2,
 			PaletteName:      d2resource.PaletteSky,
 			Toggleable:       false,
 			FontPath:         d2resource.Font16,
@@ -467,6 +475,7 @@ func getButtonLayouts() map[ButtonType]*ButtonLayout {
 			DisabledColor:    whiteAlpha100,
 			BaseFrame:        buttonDownArrowBaseFrame,
 			ResourceName:     d2resource.UpDownArrows,
+			NumFrames:        2,
 			PaletteName:      d2resource.PaletteSky,
 			Toggleable:       false,
 			FontPath:         d2resource.Font16,
@@ -481,6 +490,7 @@ func getButtonLayouts() map[ButtonType]*ButtonLayout {
 			DisabledFrame:    buttonBuySellDisabledFrame,
 			DisabledColor:    lightGreyAlpha75,
 			ResourceName:     d2resource.BuySellButton,
+			NumFrames:        2,
 			PaletteName:      d2resource.PaletteUnits,
 			Toggleable:       true,
 			FontPath:         d2resource.Font30,
@@ -500,6 +510,7 @@ func getButtonLayouts() map[ButtonType]*ButtonLayout {
 			DisabledFrame:    buttonBuySellDisabledFrame,
 			DisabledColor:    lightGreyAlpha75,
 			ResourceName:     d2resource.BuySellButton,
+			NumFrames:        2,
 			PaletteName:      d2resource.PaletteUnits,
 			Toggleable:       true,
 			FontPath:         d2resource.Font30,
@@ -519,6 +530,7 @@ func getButtonLayouts() map[ButtonType]*ButtonLayout {
 			DisabledFrame:    buttonBuySellDisabledFrame,
 			DisabledColor:    lightGreyAlpha75,
 			ResourceName:     d2resource.BuySellButton,
+			NumFrames:        2,
 			PaletteName:      d2resource.PaletteUnits,
 			Toggleable:       true,
 			FontPath:         d2resource.Font30,
@@ -538,6 +550,7 @@ func getButtonLayouts() map[ButtonType]*ButtonLayout {
 			DisabledFrame:    buttonBuySellDisabledFrame,
 			DisabledColor:    lightGreyAlpha75,
 			ResourceName:     d2resource.BuySellButton,
+			NumFrames:        2,
 			PaletteName:      d2resource.PaletteUnits,
 			Toggleable:       true,
 			FontPath:         d2resource.Font30,
@@ -635,6 +648,7 @@ func getButtonLayouts() map[ButtonType]*ButtonLayout {
 			DisabledColor:    whiteAlpha100,
 			BaseFrame:        buttonMinipanelCharacterBaseFrame,
 			ResourceName:     d2resource.MinipanelButton,
+			NumFrames:        2,
 			PaletteName:      d2resource.PaletteSky,
 			Toggleable:       false,
 			FontPath:         d2resource.Font16,
@@ -651,6 +665,7 @@ func getButtonLayouts() map[ButtonType]*ButtonLayout {
 			DisabledColor:    whiteAlpha100,
 			BaseFrame:        buttonMinipanelInventoryBaseFrame,
 			ResourceName:     d2resource.MinipanelButton,
+			NumFrames:        2,
 			PaletteName:      d2resource.PaletteSky,
 			Toggleable:       false,
 			FontPath:         d2resource.Font16,
@@ -667,6 +682,7 @@ func getButtonLayouts() map[ButtonType]*ButtonLayout {
 			DisabledColor:    whiteAlpha100,
 			BaseFrame:        buttonMinipanelSkilltreeBaseFrame,
 			ResourceName:     d2resource.MinipanelButton,
+			NumFrames:        2,
 			PaletteName:      d2resource.PaletteSky,
 			Toggleable:       false,
 			FontPath:         d2resource.Font16,
@@ -683,6 +699,7 @@ func getButtonLayouts() map[ButtonType]*ButtonLayout {
 			DisabledColor:    whiteAlpha100,
 			BaseFrame:        buttonMinipanelPartyBaseFrame,
 			ResourceName:     d2resource.MinipanelButton,
+			NumFrames:        2,
 			PaletteName:      d2resource.PaletteSky,
 			Toggleable:       false,
 			FontPath:         d2resource.Font16,
@@ -699,6 +716,7 @@ func getButtonLayouts() map[ButtonType]*ButtonLayout {
 			DisabledColor:    whiteAlpha100,
 			BaseFrame:        buttonMinipanelAutomapBaseFrame,
 			ResourceName:     d2resource.MinipanelButton,
+			NumFrames:        2,
 			PaletteName:      d2resource.PaletteSky,
 			Toggleable:       false,
 			FontPath:         d2resource.Font16,
@@ -715,6 +733,7 @@ func getButtonLayouts() map[ButtonType]*ButtonLayout {
 			DisabledColor:    whiteAlpha100,
 			BaseFrame:        buttonMinipanelMessageBaseFrame,
 			ResourceName:     d2resource.MinipanelButton,
+			NumFrames:        2,
 			PaletteName:      d2resource.PaletteSky,
 			Toggleable:       false,
 			FontPath:         d2resource.Font16,
@@ -731,6 +750,7 @@ func getButtonLayouts() map[ButtonType]*ButtonLayout {
 			DisabledColor:    whiteAlpha100,
 			BaseFrame:        buttonMinipanelQuestBaseFrame,
 			ResourceName:     d2resource.MinipanelButton,
+			NumFrames:        2,
 			PaletteName:      d2resource.PaletteSky,
 			Toggleable:       false,
 			FontPath:         d2resource.Font16,
@@ -747,6 +767,7 @@ func getButtonLayouts() map[ButtonType]*ButtonLayout {
 			DisabledColor:    whiteAlpha100,
 			BaseFrame:        buttonMinipanelMenBaseFrame,
 			ResourceName:     d2resource.MinipanelButton,
+			NumFrames:        2,
 			PaletteName:      d2resource.PaletteSky,
 			Toggleable:       false,
 			FontPath:         d2resource.Font16,
@@ -953,9 +974,13 @@ func (v *Button) createTooltip() {
 	t.SetVisible(false)
 	v.SetTooltip(t)
 }
-
 func (v *Button) prerenderStates(btnSprite *Sprite, btnLayout *ButtonLayout, label *Label) {
+
 	numButtonStates := btnSprite.GetFrameCount() / (btnLayout.XSegments * btnLayout.YSegments)
+	if btnLayout.NumFrames > 0 {
+		numButtonStates = btnLayout.NumFrames
+	}
+
 
 	// buttons always have a base image
 	if v.buttonLayout.HasImage {
@@ -1025,12 +1050,6 @@ func (v *Button) prerenderStates(btnSprite *Sprite, btnLayout *ButtonLayout, lab
 	for stateIdx, w, h := 0, v.width, v.height; stateIdx < len(buttonStateConfigs); stateIdx++ {
 		state := buttonStateConfigs[stateIdx]
 
-		if stateIdx > 1 && btnLayout.ResourceName == d2resource.BuySellButton {
-			// Without returning early, the button UI gets all subsequent (unrelated) frames
-			// stacked on top. Only 2 frames from this sprite are applicable to the button
-			// in question. The presentation is incorrect without this hack!
-			continue
-		}
 
 		surface := v.manager.renderer.NewSurface(w, h)
 
