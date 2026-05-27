@@ -111,13 +111,13 @@ func NewGameServer(asset *d2asset.AssetManager,
 	gameServer.Logger.SetLevel(l)
 
 	// Initialize Axiomatic Systems and register rules
-	kappa := d2script.NewKappaSystem(gameServer.scriptEngine.BaalAal)
+	kappa := gameServer.scriptEngine.BaalAal.KappaSystem
 	worldSys := d2script.NewWorldSystem()
 	combatSys := &d2script.CombatSystem{}
 	itemSys := &d2script.ItemSystem{}
 
-	gameServer.scriptEngine.BaalAal.RegisterRule("PlayerMove", kappa.HandleMove)
-	gameServer.scriptEngine.BaalAal.RegisterRule("PLAYER_MOVE", kappa.HandleMove)
+	gameServer.scriptEngine.BaalAal.RegisterRule("PlayerMove", gameServer.scriptEngine.BaalAal.KappaSystem.HandleMove)
+	gameServer.scriptEngine.BaalAal.RegisterRule("PLAYER_MOVE", gameServer.scriptEngine.BaalAal.KappaSystem.HandleMove)
 	gameServer.scriptEngine.BaalAal.RegisterRule("WorldEmergence", worldSys.HandleEmergence)
 	gameServer.scriptEngine.BaalAal.RegisterRule("9", combatSys.HandleCast)
 	gameServer.scriptEngine.BaalAal.RegisterRule("10", itemSys.HandleSpawn)
@@ -602,21 +602,30 @@ func (g *GameServer) getAssetMetadataList() []d2netpacket.AssetMetadata {
 			Path: path,
 		})
 
-		// Optionally list files from within the source if needed,
-		// but for the sidebar we probably just want the main archives first.
-		// If we want actual files:
-		/*
-			files, _ := source.Listfile()
+		// List files from within the source to provide detailed metadata
+		files, err := source.Listfile()
+		if err == nil {
 			for _, f := range files {
+				ext := strings.ToLower(filepath.Ext(f))
+				fType := "data"
+				switch ext {
+				case ".dc6", ".dcc", ".ds1", ".dt1":
+					fType = "image"
+				case ".wav":
+					fType = "audio"
+				case ".json", ".tbl", ".txt":
+					fType = "json"
+				}
+
 				assets = append(assets, d2netpacket.AssetMetadata{
 					ID:   f,
 					Name: filepath.Base(f),
-					Type: string(types.Ext2AssetType(filepath.Ext(f))), // need to convert AssetType to string
+					Type: fType,
 					Size: "N/A",
 					Path: f,
 				})
 			}
-		*/
+		}
 	}
 
 	return assets

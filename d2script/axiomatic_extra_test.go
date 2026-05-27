@@ -74,23 +74,28 @@ func TestBaalAalEngine_RecursivePublish(t *testing.T) {
 }
 
 func TestKappaSystem_HandleMove(t *testing.T) {
-	ks := NewKappaSystem(nil)
+func TestKappaSystem_processMove(t *testing.T) {
+	engine := NewBaalAalEngine()
+	ks := engine.KappaSystem
 	event := &IAxiomaticEvent{
-		Metadata: map[string]interface{}{
-			"client_id": "player-1",
-			"x":         10.5,
-			"y":         20.7,
+		Type: "PLAYER_MOVE",
+		Payload: map[string]interface{}{
+			"x": 10.5,
+			"y": 20.7,
 		},
+		Metadata: make(map[string]interface{}),
 	}
 
-	ks.HandleMove(event)
+	ks.onEvent(event)
 
-	pos, ok := ks.Positions["player-1"]
-	if !ok {
-		t.Fatal("expected position for player-1")
+	kx, xOk := event.Metadata["kappa_x"].(int32)
+	ky, yOk := event.Metadata["kappa_y"].(int32)
+
+	if !xOk || !yOk {
+		t.Fatal("expected kappa coordinates in metadata")
 	}
 
-	if pos[0] != 10500 || pos[1] != 20700 {
-		t.Errorf("expected [10500, 20700], got %v", pos)
+	if kx != 10500 || ky != 20700 {
+		t.Errorf("expected [10500, 20700], got [%d, %d]", kx, ky)
 	}
 }

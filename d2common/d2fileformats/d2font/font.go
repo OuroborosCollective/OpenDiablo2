@@ -145,7 +145,6 @@ func (f *Font) RenderText(text string, target d2interface.Surface) error {
 func (f *Font) initGlyphs(sr *d2datautils.StreamReader) error {
 	glyphs := make(map[rune]*d2fontglyph.FontGlyph)
 
-	// for i := numHeaderBytes; i < len(f.table); i += bytesPerGlyph {
 	for i := numHeaderBytes; true; i += bytesPerGlyph {
 		code, err := sr.ReadUInt16()
 		if err != nil {

@@ -78,7 +78,7 @@ const BabylonScene: React.FC<BabylonSceneProps> = ({ onAxiomaticUpdate, onAssetM
       } else if (packet.packetType === PacketType.AssetMetadataList) {
         const assetData = JSON.parse(atob(packet.packetData));
         if (onAssetMetadataUpdate) {
-          onAssetMetadataUpdate(assetData.assets);
+          onAssetMetadataUpdate(assetData.assets || []);
         }
       }
     };

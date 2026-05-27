@@ -48,9 +48,10 @@ func TestKappaSystem_ProcessMove(t *testing.T) {
 	event := &IAxiomaticEvent{
 		ID:   "move-1",
 		Type: "PLAYER_MOVE",
-		Payload: map[string]interface{}{
-			"x": 10.5,
-			"y": 20.75,
+		Metadata: map[string]interface{}{
+			"client_id": "player-1",
+			"x":         10.5,
+			"y":         20.75,
 		},
 	}
 
