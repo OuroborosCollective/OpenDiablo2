@@ -3,7 +3,6 @@
 package d2script
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -79,39 +78,4 @@ func (s *ScriptEngine) RunScript(fileName string) (val *otto.Value, err error) {
 	}
 
 	return &res, nil
-}
-
-// Eval JS code with a timeout.
-func (s *ScriptEngine) Eval(code string) (res string, err error) {
-	if !s.isEvalAllowed {
-		return "", errors.New("disabled")
-	}
-
-	vm := s.getVM()
-	interrupt := make(chan func(), 1)
-	vm.Interrupt = interrupt
-
-	go func() {
-		time.Sleep(defaultEvalTimeout)
-		interrupt <- func() {
-			panic(ErrEvalTimeout)
-		}
-	}()
-
-	defer func() {
-		if caught := recover(); caught != nil {
-			if caught == ErrEvalTimeout {
-				err = ErrEvalTimeout
-				return
-			}
-			panic(caught)
-		}
-	}()
-
-	val, err := vm.Eval(code)
-	if err != nil {
-		return "", err
-	}
-
-	return val.String(), nil
 }

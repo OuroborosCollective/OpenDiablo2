@@ -14,16 +14,3 @@ func d2ToEbitenFilter(filter d2enum.Filter) ebiten.Filter {
 		return ebiten.FilterLinear
 	}
 }
-
-// func ebitenToD2Filter(filter ebiten.Filter) d2enum.Filter {
-// 	switch filter {
-// 	case ebiten.FilterDefault:
-// 		return d2enum.FilterDefault
-// 	case ebiten.FilterLinear:
-// 		return d2enum.FilterLinear
-// 	case ebiten.FilterNearest:
-// 		return d2enum.FilterNearest
-// 	}
-//
-// 	return d2enum.FilterDefault
-// }
