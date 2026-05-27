@@ -164,6 +164,9 @@ func (c *AREStateCompiler) Compile(states []AREStateData) []byte {
 // KappaSystem implements deterministic coordinate tracking.
 type KappaSystem struct {
 	sync.RWMutex
+	engine    *BaalAalEngine
+	Positions map[string][]int32
+	Compiler  *AREStateCompiler
 	Positions          map[string][]int32
 	Compiler           *AREStateCompiler
 	engine *BaalAalEngine
@@ -228,6 +231,10 @@ func (k *KappaSystem) HandleMove(event *IAxiomaticEvent) {
 			event.Metadata["kappa_y"] = k.Compiler.ToKappa(y)
 		}
 	}
+}
+
+func (k *KappaSystem) HandleMove(event *IAxiomaticEvent) {
+	k.onEvent(event)
 }
 
 // BaalAalEngine wraps the Axiomatic components into a cohesive engine.
