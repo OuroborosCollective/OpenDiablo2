@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"io/ioutil"
+
 	"os"
 	"path/filepath"
 	"runtime"
@@ -36,13 +36,14 @@ type PatchInfo struct {
 
 // New loads an MPQ file and only reads the header
 func New(fileName string) (*MPQ, error) {
-	mpq := &MPQ{filePath: fileName, crypto: newCrypto()}
+	fileName = filepath.Clean(fileName)
+	mpq := &MPQ{filePath: fileName}
 
 	var err error
 	if runtime.GOOS == "linux" {
 		mpq.file, err = openIgnoreCase(fileName)
 	} else {
-		mpq.file, err = os.Open(fileName) //nolint:gosec // Will fix later
+		mpq.file, err = os.Open(filepath.Clean(fileName))
 	}
 
 	if err != nil {
@@ -181,27 +182,28 @@ func (mpq *MPQ) Size() uint32 {
 }
 
 func openIgnoreCase(mpqPath string) (*os.File, error) {
+	mpqPath = filepath.Clean(mpqPath)
 	// First see if file exists with specified case
-	mpqFile, err := os.Open(mpqPath) //nolint:gosec // Will fix later
+	mpqFile, err := os.Open(filepath.Clean(mpqPath))
 	if err != nil {
 		mpqName := filepath.Base(mpqPath)
 		mpqDir := filepath.Dir(mpqPath)
 
-		var files []fs.FileInfo
-		files, err = ioutil.ReadDir(mpqDir)
+		var files []fs.DirEntry
+		files, err = os.ReadDir(mpqDir)
 
 		if err != nil {
 			return nil, err
 		}
 
-		for _, file := range files {
-			if strings.EqualFold(file.Name(), mpqName) {
-				mpqName = file.Name()
+		for _, entry := range entries {
+			if strings.EqualFold(entry.Name(), mpqName) {
+				mpqName = entry.Name()
 				break
 			}
 		}
 
-		return os.Open(filepath.Join(mpqDir, mpqName)) //nolint:gosec // Will fix later
+		return os.Open(filepath.Clean(filepath.Join(mpqDir, mpqName)))
 	}
 
 	return mpqFile, err
