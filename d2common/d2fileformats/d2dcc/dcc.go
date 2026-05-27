@@ -65,13 +65,20 @@ func (d *DCC) decodeDirection(direction int) *DCCDirection {
 // Clone creates a copy of the DCC
 func (d *DCC) Clone() *DCC {
 	clone := *d
+
+	clone.directionOffsets = make([]int, len(d.directionOffsets))
 	copy(clone.directionOffsets, d.directionOffsets)
+
+	clone.fileData = make([]byte, len(d.fileData))
 	copy(clone.fileData, d.fileData)
+
 	clone.Directions = make([]*DCCDirection, len(d.Directions))
 
 	for i := range d.Directions {
-		cloneDirection := *d.Directions[i]
-		clone.Directions = append(clone.Directions, &cloneDirection)
+		if d.Directions[i] != nil {
+			cloneDirection := *d.Directions[i]
+			clone.Directions[i] = &cloneDirection
+		}
 	}
 
 	return &clone
