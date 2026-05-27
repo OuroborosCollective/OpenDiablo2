@@ -74,7 +74,6 @@ func TestBaalAalEngine_RecursivePublish(t *testing.T) {
 }
 
 func TestKappaSystem_HandleMove(t *testing.T) {
-func TestKappaSystem_processMove(t *testing.T) {
 	engine := NewBaalAalEngine()
 	ks := engine.KappaSystem
 	event := &IAxiomaticEvent{
@@ -83,10 +82,12 @@ func TestKappaSystem_processMove(t *testing.T) {
 			"x": 10.5,
 			"y": 20.7,
 		},
-		Metadata: make(map[string]interface{}),
+		Metadata: map[string]interface{}{
+			"client_id": "test-client",
+		},
 	}
 
-	ks.onEvent(event)
+	ks.HandleMove(event)
 
 	kx, xOk := event.Metadata["kappa_x"].(int32)
 	ky, yOk := event.Metadata["kappa_y"].(int32)
@@ -97,5 +98,13 @@ func TestKappaSystem_processMove(t *testing.T) {
 
 	if kx != 10500 || ky != 20700 {
 		t.Errorf("expected [10500, 20700], got [%d, %d]", kx, ky)
+	}
+
+	pos, ok := ks.Positions["test-client"]
+	if !ok {
+		t.Fatal("expected position to be recorded")
+	}
+	if pos[0] != 10500 || pos[1] != 20700 {
+		t.Errorf("expected recorded position [10500, 20700], got [%d, %d]", pos[0], pos[1])
 	}
 }

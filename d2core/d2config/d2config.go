@@ -21,8 +21,6 @@ type Configuration struct {
 	Gamma           float64
 	Contrast        float64
 	ThreeDBias      float64
-	Gamma           float64
-	Contrast        float64
 	path            string
 }
 

@@ -29,3 +29,8 @@ func (s *ScriptEngine) AddFunction(name string, value interface{}) {
 func (s *ScriptEngine) RunScript(fileName string) (*otto.Value, error) {
 	return nil, ErrScriptingDisabled
 }
+
+// Eval returns an error in release builds.
+func (s *ScriptEngine) Eval(script string) (*otto.Value, error) {
+	return nil, ErrScriptingDisabled
+}
