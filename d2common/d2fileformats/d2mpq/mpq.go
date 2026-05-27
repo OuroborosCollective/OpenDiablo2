@@ -35,6 +35,7 @@ type PatchInfo struct {
 
 // New loads an MPQ file and only reads the header
 func New(fileName string) (*MPQ, error) {
+	fileName = filepath.Clean(fileName)
 	mpq := &MPQ{filePath: fileName}
 
 	var err error
@@ -180,6 +181,7 @@ func (mpq *MPQ) Size() uint32 {
 }
 
 func openIgnoreCase(mpqPath string) (*os.File, error) {
+	mpqPath = filepath.Clean(mpqPath)
 	// First see if file exists with specified case
 	mpqFile, err := os.Open(filepath.Clean(mpqPath))
 	if err != nil {
