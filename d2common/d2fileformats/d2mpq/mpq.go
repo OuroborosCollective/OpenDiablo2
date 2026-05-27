@@ -23,6 +23,7 @@ type MPQ struct {
 	hashes   map[uint64]*Hash
 	blocks   []*Block
 	header   Header
+	crypto   *crypto
 }
 
 // PatchInfo represents patch info for the MPQ.
@@ -76,7 +77,7 @@ func FromFile(fileName string) (*MPQ, error) {
 
 // getFileBlockData gets a block table entry
 func (mpq *MPQ) getFileBlockData(fileName string) (*Block, error) {
-	fileEntry, ok := mpq.hashes[hashFilename(fileName)]
+	fileEntry, ok := mpq.hashes[mpq.crypto.hashFilename(fileName)]
 	if !ok {
 		return nil, errors.New("file not found")
 	}
@@ -171,7 +172,7 @@ func (mpq *MPQ) Path() string {
 
 // Contains returns bool for whether the given filename exists in the mpq
 func (mpq *MPQ) Contains(filename string) bool {
-	_, ok := mpq.hashes[hashFilename(filename)]
+	_, ok := mpq.hashes[mpq.crypto.hashFilename(filename)]
 	return ok
 }
 

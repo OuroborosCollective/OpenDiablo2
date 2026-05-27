@@ -47,9 +47,9 @@ func (b *Block) HasFlag(flag FileFlag) bool {
 	return (b.Flags & flag) != 0
 }
 
-func (b *Block) calculateEncryptionSeed(fileName string) {
+func (b *Block) calculateEncryptionSeed(crypto *crypto, fileName string) {
 	fileName = fileName[strings.LastIndex(fileName, `\`)+1:]
-	seed := hashString(fileName, 3)
+	seed := crypto.hashString(fileName, 3)
 	b.EncryptionSeed = (seed + b.FilePosition) ^ b.UncompressedFileSize
 }
 
@@ -59,7 +59,7 @@ func (mpq *MPQ) readBlockTable() error {
 		return err
 	}
 
-	blockData, err := decryptTable(mpq.file, mpq.header.BlockTableEntries, "(block table)")
+	blockData, err := mpq.crypto.decryptTable(mpq.file, mpq.header.BlockTableEntries, "(block table)")
 	if err != nil {
 		return err
 	}

@@ -6,21 +6,23 @@ import (
 	"strings"
 )
 
-var cryptoBuffer [0x500]uint32 //nolint:gochecknoglobals // will fix later..
-var cryptoBufferReady bool     //nolint:gochecknoglobals // will fix later..
+type crypto struct {
+	buffer [0x500]uint32
+}
 
-func cryptoLookup(index uint32) uint32 {
-	if !cryptoBufferReady {
-		cryptoInitialize()
+func newCrypto() *crypto {
+	c := &crypto{}
+	c.initialize()
 
-		cryptoBufferReady = true
-	}
+	return c
+}
 
-	return cryptoBuffer[index]
+func (c *crypto) lookup(index uint32) uint32 {
+	return c.buffer[index]
 }
 
 //nolint:gomnd // Decryption magic
-func cryptoInitialize() {
+func (c *crypto) initialize() {
 	seed := uint32(0x00100001)
 
 	for index1 := 0; index1 < 0x100; index1++ {
@@ -31,18 +33,18 @@ func cryptoInitialize() {
 			temp1 := (seed & 0xFFFF) << 0x10
 			seed = (seed*125 + 3) % 0x2AAAAB
 			temp2 := seed & 0xFFFF
-			cryptoBuffer[index2] = temp1 | temp2
+			c.buffer[index2] = temp1 | temp2
 			index2 += 0x100
 		}
 	}
 }
 
 //nolint:gomnd // Decryption magic
-func decrypt(data []uint32, seed uint32) {
+func (c *crypto) decrypt(data []uint32, seed uint32) {
 	seed2 := uint32(0xeeeeeeee)
 
 	for i := 0; i < len(data); i++ {
-		seed2 += cryptoLookup(0x400 + (seed & 0xff))
+		seed2 += c.lookup(0x400 + (seed & 0xff))
 		result := data[i]
 		result ^= seed + seed2
 
@@ -53,10 +55,11 @@ func decrypt(data []uint32, seed uint32) {
 }
 
 //nolint:gomnd // Decryption magic
-func decryptBytes(data []byte, seed uint32) {
+func (c *crypto) decryptBytes(data []byte, seed uint32) {
 	seed2 := uint32(0xEEEEEEEE)
+
 	for i := 0; i < len(data)-3; i += 4 {
-		seed2 += cryptoLookup(0x400 + (seed & 0xFF))
+		seed2 += c.lookup(0x400 + (seed & 0xFF))
 		result := binary.LittleEndian.Uint32(data[i : i+4])
 		result ^= seed + seed2
 		seed = ((^seed << 21) + 0x11111111) | (seed >> 11)
@@ -70,8 +73,8 @@ func decryptBytes(data []byte, seed uint32) {
 }
 
 //nolint:gomnd // Decryption magic
-func decryptTable(r io.Reader, size uint32, name string) ([]uint32, error) {
-	seed := hashString(name, 3)
+func (c *crypto) decryptTable(r io.Reader, size uint32, name string) ([]uint32, error) {
+	seed := c.hashString(name, 3)
 	seed2 := uint32(0xEEEEEEEE)
 	size *= 4
 
@@ -79,7 +82,7 @@ func decryptTable(r io.Reader, size uint32, name string) ([]uint32, error) {
 	buf := make([]byte, 4)
 
 	for i := uint32(0); i < size; i++ {
-		seed2 += cryptoBuffer[0x400+(seed&0xff)]
+		seed2 += c.buffer[0x400+(seed&0xff)]
 
 		if _, err := r.Read(buf); err != nil {
 			return table, err
@@ -96,19 +99,20 @@ func decryptTable(r io.Reader, size uint32, name string) ([]uint32, error) {
 	return table, nil
 }
 
-func hashFilename(key string) uint64 {
-	a, b := hashString(key, 1), hashString(key, 2)
+func (c *crypto) hashFilename(key string) uint64 {
+	a, b := c.hashString(key, 1), c.hashString(key, 2)
+
 	return uint64(a)<<32 | uint64(b)
 }
 
 //nolint:gomnd // Decryption magic
-func hashString(key string, hashType uint32) uint32 {
+func (c *crypto) hashString(key string, hashType uint32) uint32 {
 	seed1 := uint32(0x7FED7FED)
 	seed2 := uint32(0xEEEEEEEE)
 
 	/* prepare seeds. */
 	for _, char := range strings.ToUpper(key) {
-		seed1 = cryptoLookup((hashType*0x100)+uint32(char)) ^ (seed1 + seed2)
+		seed1 = c.lookup((hashType*0x100)+uint32(char)) ^ (seed1 + seed2)
 		seed2 = uint32(char) + seed1 + seed2 + (seed2 << 5) + 3
 	}
 
@@ -116,11 +120,11 @@ func hashString(key string, hashType uint32) uint32 {
 }
 
 //nolint:unused,deadcode,gomnd // will use this for creating mpq's
-func encrypt(data []uint32, seed uint32) {
+func (c *crypto) encrypt(data []uint32, seed uint32) {
 	seed2 := uint32(0xeeeeeeee)
 
 	for i := 0; i < len(data); i++ {
-		seed2 += cryptoLookup(0x400 + (seed & 0xff))
+		seed2 += c.lookup(0x400 + (seed & 0xff))
 		result := data[i]
 		result ^= seed + seed2
 
