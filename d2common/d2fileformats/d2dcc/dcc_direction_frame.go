@@ -55,35 +55,36 @@ func CreateDCCDirectionFrame(bits *d2datautils.BitMuncher, direction *DCCDirecti
 }
 
 func (v *DCCDirectionFrame) recalculateCells(direction *DCCDirection) {
-	// nolint:gomnd // constant
-	var w = 4 - ((v.Box.Left - direction.Box.Left) % 4) // Width of the first column (in pixels)
+	relLeft := v.Box.Left - direction.Box.Left
+	relTop := v.Box.Top - direction.Box.Top
 
-	if (v.Width - w) <= 1 {
+	// Correct modulo for negative numbers to get position within 4x4 grid
+	offX := ((relLeft % cellsPerRow) + cellsPerRow) % cellsPerRow
+	offY := ((relTop % cellsPerRow) + cellsPerRow) % cellsPerRow
+
+	// Width/Height of the first cell
+	w := cellsPerRow - offX
+	h := cellsPerRow - offY
+
+	if w > v.Width {
+		w = v.Width
+	}
+	if h > v.Height {
+		h = v.Height
+	}
+
+	if v.Width <= w {
 		v.HorizontalCellCount = 1
 	} else {
-		tmp := v.Width - w - 1
-		v.HorizontalCellCount = 2 + (tmp / 4) //nolint:gomnd // magic math
-
-		// nolint:gomnd // constant
-		if (tmp % 4) == 0 {
-			v.HorizontalCellCount--
-		}
+		v.HorizontalCellCount = 2 + (v.Width-w-1)/cellsPerRow
 	}
 
-	// Height of the first column (in pixels)
-	h := 4 - ((v.Box.Top - direction.Box.Top) % 4) //nolint:gomnd // data decode
-
-	if (v.Height - h) <= 1 {
+	if v.Height <= h {
 		v.VerticalCellCount = 1
 	} else {
-		tmp := v.Height - h - 1
-		v.VerticalCellCount = 2 + (tmp / 4) //nolint:gomnd // data decode
-
-		// nolint:gomnd // constant
-		if (tmp % 4) == 0 {
-			v.VerticalCellCount--
-		}
+		v.VerticalCellCount = 2 + (v.Height-h-1)/cellsPerRow
 	}
+
 	// Calculate the cell widths and heights
 	cellWidths := make([]int, v.HorizontalCellCount)
 	if v.HorizontalCellCount == 1 {
@@ -91,11 +92,10 @@ func (v *DCCDirectionFrame) recalculateCells(direction *DCCDirection) {
 	} else {
 		cellWidths[0] = w
 		for i := 1; i < (v.HorizontalCellCount - 1); i++ {
-			cellWidths[i] = 4
+			cellWidths[i] = cellsPerRow
 		}
 
-		// nolint:gomnd // constants
-		cellWidths[v.HorizontalCellCount-1] = v.Width - w - (4 * (v.HorizontalCellCount - 2))
+		cellWidths[v.HorizontalCellCount-1] = v.Width - w - (cellsPerRow * (v.HorizontalCellCount - 2))
 	}
 
 	cellHeights := make([]int, v.VerticalCellCount)
@@ -104,11 +104,10 @@ func (v *DCCDirectionFrame) recalculateCells(direction *DCCDirection) {
 	} else {
 		cellHeights[0] = h
 		for i := 1; i < (v.VerticalCellCount - 1); i++ {
-			cellHeights[i] = 4
+			cellHeights[i] = cellsPerRow
 		}
 
-		// nolint:gomnd // constants
-		cellHeights[v.VerticalCellCount-1] = v.Height - h - (4 * (v.VerticalCellCount - 2))
+		cellHeights[v.VerticalCellCount-1] = v.Height - h - (cellsPerRow * (v.VerticalCellCount - 2))
 	}
 
 	v.Cells = make([]DCCCell, v.HorizontalCellCount*v.VerticalCellCount)

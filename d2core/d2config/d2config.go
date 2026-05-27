@@ -18,6 +18,8 @@ type Configuration struct {
 	RunInBackground bool
 	VsyncEnabled    bool
 	Backend         string
+	Gamma           float64
+	Contrast        float64
 	ThreeDBias      float64
 	Gamma           float64
 	Contrast        float64

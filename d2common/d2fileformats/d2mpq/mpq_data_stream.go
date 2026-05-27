@@ -1,6 +1,11 @@
 package d2mpq
 
-import "github.com/OpenDiablo2/OpenDiablo2/d2common/d2interface"
+import (
+	"errors"
+	"io"
+
+	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2interface"
+)
 
 var _ d2interface.DataStream = &MpqDataStream{} // Static check to confirm struct conforms to interface
 
@@ -17,7 +22,25 @@ func (m *MpqDataStream) Read(p []byte) (n int, err error) {
 
 // Seek sets the position of the data stream
 func (m *MpqDataStream) Seek(offset int64, whence int) (int64, error) {
-	m.stream.Position = uint32(offset + int64(whence))
+	var newPos int64
+
+	switch whence {
+	case io.SeekStart:
+		newPos = offset
+	case io.SeekCurrent:
+		newPos = int64(m.stream.Position) + offset
+	case io.SeekEnd:
+		newPos = int64(m.stream.Block.UncompressedFileSize) + offset
+	default:
+		return 0, errors.New("invalid whence")
+	}
+
+	if newPos < 0 {
+		return 0, errors.New("negative position")
+	}
+
+	m.stream.Position = uint32(newPos)
+
 	return int64(m.stream.Position), nil
 }
 
