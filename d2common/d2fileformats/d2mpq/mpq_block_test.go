@@ -84,7 +84,7 @@ func TestBlock_calculateEncryptionSeed(t *testing.T) {
 				FilePosition:         tt.filePosition,
 				UncompressedFileSize: tt.uncompressedFileSize,
 			}
-			b.calculateEncryptionSeed(tt.fileName)
+			b.calculateEncryptionSeed(newCrypto(), tt.fileName)
 			if b.EncryptionSeed != tt.expectedSeed {
 				t.Errorf("Block.calculateEncryptionSeed() = 0x%08X, want 0x%08X", b.EncryptionSeed, tt.expectedSeed)
 			}

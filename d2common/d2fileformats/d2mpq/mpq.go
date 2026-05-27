@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"io/ioutil"
+
 	"os"
 	"path/filepath"
 	"runtime"
@@ -23,6 +23,7 @@ type MPQ struct {
 	hashes   map[uint64]*Hash
 	blocks   []*Block
 	header   Header
+	crypto   *crypto
 }
 
 // PatchInfo represents patch info for the MPQ.
@@ -35,13 +36,14 @@ type PatchInfo struct {
 
 // New loads an MPQ file and only reads the header
 func New(fileName string) (*MPQ, error) {
+	fileName = filepath.Clean(fileName)
 	mpq := &MPQ{filePath: fileName}
 
 	var err error
 	if runtime.GOOS == "linux" {
 		mpq.file, err = openIgnoreCase(fileName)
 	} else {
-		mpq.file, err = os.Open(fileName) //nolint:gosec // Will fix later
+		mpq.file, err = os.Open(filepath.Clean(fileName))
 	}
 
 	if err != nil {
@@ -75,7 +77,7 @@ func FromFile(fileName string) (*MPQ, error) {
 
 // getFileBlockData gets a block table entry
 func (mpq *MPQ) getFileBlockData(fileName string) (*Block, error) {
-	fileEntry, ok := mpq.hashes[hashFilename(fileName)]
+	fileEntry, ok := mpq.hashes[mpq.crypto.hashFilename(fileName)]
 	if !ok {
 		return nil, errors.New("file not found")
 	}
@@ -170,7 +172,7 @@ func (mpq *MPQ) Path() string {
 
 // Contains returns bool for whether the given filename exists in the mpq
 func (mpq *MPQ) Contains(filename string) bool {
-	_, ok := mpq.hashes[hashFilename(filename)]
+	_, ok := mpq.hashes[mpq.crypto.hashFilename(filename)]
 	return ok
 }
 
@@ -180,27 +182,28 @@ func (mpq *MPQ) Size() uint32 {
 }
 
 func openIgnoreCase(mpqPath string) (*os.File, error) {
+	mpqPath = filepath.Clean(mpqPath)
 	// First see if file exists with specified case
-	mpqFile, err := os.Open(mpqPath) //nolint:gosec // Will fix later
+	mpqFile, err := os.Open(filepath.Clean(mpqPath))
 	if err != nil {
 		mpqName := filepath.Base(mpqPath)
 		mpqDir := filepath.Dir(mpqPath)
 
-		var files []fs.FileInfo
-		files, err = ioutil.ReadDir(mpqDir)
+		var files []fs.DirEntry
+		files, err = os.ReadDir(mpqDir)
 
 		if err != nil {
 			return nil, err
 		}
 
-		for _, file := range files {
-			if strings.EqualFold(file.Name(), mpqName) {
-				mpqName = file.Name()
+		for _, entry := range entries {
+			if strings.EqualFold(entry.Name(), mpqName) {
+				mpqName = entry.Name()
 				break
 			}
 		}
 
-		return os.Open(filepath.Join(mpqDir, mpqName)) //nolint:gosec // Will fix later
+		return os.Open(filepath.Clean(filepath.Join(mpqDir, mpqName)))
 	}
 
 	return mpqFile, err

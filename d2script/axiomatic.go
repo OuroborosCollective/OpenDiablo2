@@ -164,15 +164,16 @@ func (c *AREStateCompiler) Compile(states []AREStateData) []byte {
 // KappaSystem implements deterministic coordinate tracking.
 type KappaSystem struct {
 	sync.RWMutex
-	Positions map[string][]int32
-	Compiler  *AREStateCompiler
-	engine    *BaalAalEngine
+	Positions          map[string][]int32
+	Compiler           *AREStateCompiler
+	engine *BaalAalEngine
 }
 
-func NewKappaSystem() *KappaSystem {
-	return &KappaSystem{
-		Positions: make(map[string][]int32),
-		Compiler:  &AREStateCompiler{},
+func NewKappaSystem(engine *BaalAalEngine) *KappaSystem {
+	k := &KappaSystem{
+			Positions: make(map[string][]int32),
+			Compiler:  &AREStateCompiler{},
+		engine: engine,
 	}
 }
 
@@ -217,6 +218,7 @@ func (k *KappaSystem) HandleMove(event *IAxiomaticEvent) {
 type BaalAalEngine struct {
 	Compiler           *AREStateCompiler
 	EventBus           *AxiomaticEventBus
+	KappaSystem        *KappaSystem
 	rules              map[string][]func(*IAxiomaticEvent)
 	lastProcessedIndex int
 	KappaSystem        *KappaSystem
@@ -324,3 +326,4 @@ func (e *BaalAalEngine) GetStatus() (float64, float64) {
 	resonance := math.Mod(e.EventBus.resonanceState, 1.0)
 	return resonance, e.EventBus.resonanceState
 }
+

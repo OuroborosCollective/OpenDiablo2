@@ -3,6 +3,7 @@ package d2tbl
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2datautils"
 )
@@ -74,7 +75,7 @@ func (td TextDictionary) loadHashEntry(idx int, hashEntry *textDictionaryHashEnt
 
 	br.SetPosition(uint64(hashEntry.IndexString))
 
-	key := ""
+	var sb strings.Builder
 
 	for {
 		b, err := br.ReadByte()
@@ -86,8 +87,10 @@ func (td TextDictionary) loadHashEntry(idx int, hashEntry *textDictionaryHashEnt
 			return fmt.Errorf("reading kay char: %v", err)
 		}
 
-		key += string(b)
+		sb.WriteByte(b)
 	}
+
+	key := sb.String()
 
 	if key == "x" || key == "X" {
 		key = "#" + strconv.Itoa(idx)

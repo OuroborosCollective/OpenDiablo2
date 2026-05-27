@@ -420,7 +420,7 @@ func parseCommand(command string) []string {
 	var (
 		quoted bool
 		escape bool
-		param  string
+		param  strings.Builder
 		params []string
 	)
 
@@ -428,32 +428,32 @@ func parseCommand(command string) []string {
 		switch c {
 		case '"':
 			if escape {
-				param += string(c)
+				param.WriteRune(c)
 				escape = false
 			} else {
 				quoted = !quoted
 			}
 		case ' ':
 			if quoted {
-				param += string(c)
-			} else if len(param) > 0 {
-				params = append(params, param)
-				param = ""
+				param.WriteRune(c)
+			} else if param.Len() > 0 {
+				params = append(params, param.String())
+				param.Reset()
 			}
 		case '\\':
 			if escape {
-				param += string(c)
+				param.WriteRune(c)
 				escape = false
 			} else {
 				escape = true
 			}
 		default:
-			param += string(c)
+			param.WriteRune(c)
 		}
 	}
 
-	if len(param) > 0 {
-		params = append(params, param)
+	if param.Len() > 0 {
+		params = append(params, param.String())
 	}
 
 	return params
