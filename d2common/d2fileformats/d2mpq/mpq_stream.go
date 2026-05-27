@@ -391,7 +391,7 @@ func decompressByMask(mask byte, data []byte, expectedLength uint32) ([]byte, er
 	case 0x88:
 		return []byte{}, errors.New("pk + wav decompression (0x88) not supported")
 	default:
-		return []byte{}, fmt.Errorf("decompression not supported for unknown compression type %X", compressionType)
+		return []byte{}, fmt.Errorf("decompression not supported for mask %X", mask)
 	}
 
 	return nil, fmt.Errorf("decompression not supported for unknown compression type %X", mask)

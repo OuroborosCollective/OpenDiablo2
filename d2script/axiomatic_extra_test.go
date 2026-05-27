@@ -73,6 +73,7 @@ func TestBaalAalEngine_RecursivePublish(t *testing.T) {
 	}
 }
 
+func TestKappaSystem_HandleMove(t *testing.T) {
 func TestKappaSystem_processMove(t *testing.T) {
 	engine := NewBaalAalEngine()
 	ks := engine.KappaSystem
