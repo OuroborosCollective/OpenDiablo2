@@ -230,6 +230,10 @@ func (k *KappaSystem) HandleMove(event *IAxiomaticEvent) {
 			event.Metadata["kappa_x"] = k.Compiler.ToKappa(x)
 			event.Metadata["kappa_y"] = k.Compiler.ToKappa(y)
 		}
+
+		// Also update metadata to prove it processed
+		event.Metadata["kappa_x"] = k.engine.Compiler.ToKappa(x)
+		event.Metadata["kappa_y"] = k.engine.Compiler.ToKappa(y)
 	}
 }
 

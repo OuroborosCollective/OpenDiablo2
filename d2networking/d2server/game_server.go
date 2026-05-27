@@ -116,8 +116,8 @@ func NewGameServer(asset *d2asset.AssetManager,
 	combatSys := &d2script.CombatSystem{}
 	itemSys := &d2script.ItemSystem{}
 
-	gameServer.scriptEngine.BaalAal.RegisterRule("PlayerMove", kappa.HandleMove)
-	gameServer.scriptEngine.BaalAal.RegisterRule("PLAYER_MOVE", kappa.HandleMove)
+	gameServer.scriptEngine.BaalAal.RegisterRule("PlayerMove", gameServer.scriptEngine.BaalAal.KappaSystem.HandleMove)
+	gameServer.scriptEngine.BaalAal.RegisterRule("PLAYER_MOVE", gameServer.scriptEngine.BaalAal.KappaSystem.HandleMove)
 	gameServer.scriptEngine.BaalAal.RegisterRule("WorldEmergence", worldSys.HandleEmergence)
 	gameServer.scriptEngine.BaalAal.RegisterRule("9", combatSys.HandleCast)
 	gameServer.scriptEngine.BaalAal.RegisterRule("10", itemSys.HandleSpawn)
