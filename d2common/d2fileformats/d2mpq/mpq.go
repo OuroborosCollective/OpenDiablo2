@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"io/ioutil"
+
 	"os"
 	"path/filepath"
 	"runtime"
@@ -41,7 +41,7 @@ func New(fileName string) (*MPQ, error) {
 	if runtime.GOOS == "linux" {
 		mpq.file, err = openIgnoreCase(fileName)
 	} else {
-		mpq.file, err = os.Open(fileName) //nolint:gosec // Will fix later
+		mpq.file, err = os.Open(filepath.Clean(fileName))
 	}
 
 	if err != nil {
@@ -181,13 +181,13 @@ func (mpq *MPQ) Size() uint32 {
 
 func openIgnoreCase(mpqPath string) (*os.File, error) {
 	// First see if file exists with specified case
-	mpqFile, err := os.Open(mpqPath) //nolint:gosec // Will fix later
+	mpqFile, err := os.Open(filepath.Clean(mpqPath))
 	if err != nil {
 		mpqName := filepath.Base(mpqPath)
 		mpqDir := filepath.Dir(mpqPath)
 
-		var files []fs.FileInfo
-		files, err = ioutil.ReadDir(mpqDir)
+		var files []fs.DirEntry
+		files, err = os.ReadDir(mpqDir)
 
 		if err != nil {
 			return nil, err
@@ -200,7 +200,7 @@ func openIgnoreCase(mpqPath string) (*os.File, error) {
 			}
 		}
 
-		return os.Open(filepath.Join(mpqDir, mpqName)) //nolint:gosec // Will fix later
+		return os.Open(filepath.Clean(filepath.Join(mpqDir, mpqName)))
 	}
 
 	return mpqFile, err
