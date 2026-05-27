@@ -34,7 +34,7 @@ func CreateStream(mpq *MPQ, block *Block, fileName string) (*Stream, error) {
 	}
 
 	if s.Block.HasFlag(FileFixKey) {
-		s.Block.calculateEncryptionSeed(fileName)
+		s.Block.calculateEncryptionSeed(s.MPQ.crypto, fileName)
 	}
 
 	s.Size = 0x200 << s.MPQ.header.BlockSize //nolint:gomnd // MPQ magic
@@ -71,7 +71,7 @@ func (v *Stream) loadBlockOffsets() error {
 	}
 
 	if v.Block.HasFlag(FileEncrypted) {
-		decrypt(v.Positions, v.Block.EncryptionSeed-1)
+		v.MPQ.crypto.decrypt(v.Positions, v.Block.EncryptionSeed-1)
 
 		blockPosSize := blockPositionCount << 2 //nolint:gomnd // MPQ magic
 		if v.Positions[0] != blockPosSize {
@@ -87,6 +87,20 @@ func (v *Stream) loadBlockOffsets() error {
 }
 
 func (v *Stream) Read(buffer []byte, offset, count uint32) (readTotal uint32, err error) {
+	if count == 0 {
+		return 0, nil
+	}
+
+	// Safety check for buffer bounds
+	if offset >= uint32(len(buffer)) {
+		return 0, io.ErrShortBuffer
+	}
+
+	// Prevent reading beyond file size
+	if v.Position >= v.Block.UncompressedFileSize {
+		return 0, io.EOF
+	}
+
 	if v.Block.HasFlag(FileSingleUnit) {
 		return v.readInternalSingleUnit(buffer, offset, count)
 	}
@@ -96,6 +110,9 @@ func (v *Stream) Read(buffer []byte, offset, count uint32) (readTotal uint32, er
 	toRead := count
 	for toRead > 0 {
 		if read, err = v.readInternal(buffer, offset, toRead); err != nil {
+			if err == io.EOF && readTotal > 0 {
+				return readTotal, nil
+			}
 			return readTotal, err
 		}
 
@@ -106,6 +123,11 @@ func (v *Stream) Read(buffer []byte, offset, count uint32) (readTotal uint32, er
 		readTotal += read
 		offset += read
 		toRead -= read
+
+		// If we've reached the end of the file, stop reading
+		if v.Position >= v.Block.UncompressedFileSize {
+			break
+		}
 	}
 
 	return readTotal, nil
@@ -178,22 +200,36 @@ func (v *Stream) bufferData() (err error) {
 }
 
 func (v *Stream) loadSingleUnit() (err error) {
-	if _, err = v.MPQ.file.Seek(int64(v.MPQ.header.HeaderSize), io.SeekStart); err != nil {
+	if _, err = v.MPQ.file.Seek(int64(v.Block.FilePosition), io.SeekStart); err != nil {
 		return err
 	}
 
-	fileData := make([]byte, v.Size)
+	fileData := make([]byte, v.Block.CompressedFileSize)
 
-	if _, err = v.MPQ.file.Read(fileData); err != nil {
+	if _, err = io.ReadFull(v.MPQ.file, fileData); err != nil {
 		return err
 	}
 
-	if v.Size == v.Block.UncompressedFileSize {
+	if v.Block.HasFlag(FileEncrypted) && v.Block.UncompressedFileSize > 3 {
+		if v.Block.EncryptionSeed == 0 {
+			return errors.New("unable to determine encryption key")
+		}
+
+		decryptBytes(fileData, v.Block.EncryptionSeed)
+	}
+
+	if v.Block.CompressedFileSize == v.Block.UncompressedFileSize {
 		v.Data = fileData
 		return nil
 	}
 
-	v.Data, err = decompressMulti(fileData, v.Block.UncompressedFileSize)
+	if v.Block.HasFlag(FileCompress) {
+		v.Data, err = decompressMulti(fileData, v.Block.UncompressedFileSize)
+	} else if v.Block.HasFlag(FileImplode) {
+		v.Data, err = pkDecompress(fileData)
+	} else {
+		v.Data = fileData
+	}
 
 	return err
 }
@@ -251,7 +287,7 @@ func (v *Stream) loadBlock(blockIndex, expectedLength uint32) ([]byte, error) {
 			return []byte{}, errors.New("unable to determine encryption key")
 		}
 
-		decryptBytes(data, blockIndex+v.Block.EncryptionSeed)
+		v.MPQ.crypto.decryptBytes(data, blockIndex+v.Block.EncryptionSeed)
 	}
 
 	if v.Block.HasFlag(FileCompress) {
@@ -288,56 +324,10 @@ func decompressMulti(data []byte, expectedLength uint32) (res []byte, err error)
 		return []byte{}, errors.New("empty data for decompression")
 	}
 
-	return decompressByMask(data[0], data[1:], expectedLength)
-}
+	compressionMask := data[0]
+	remainingData := data[1:]
 
-func decompressByMask(mask uint8, data []byte, expectedLength uint32) ([]byte, error) {
-	var res []byte
-	var err error
-
-	switch mask {
-	case CompHuffman:
-		res = d2compression.HuffmanDecompress(data)
-		if res == nil {
-			return nil, errors.New("huffman decompression failed")
-		}
-	case CompDeflate:
-		res, err = deflate(data)
-	case CompPKLib:
-		res, err = pkDecompress(data)
-	case CompBZip2:
-		return []byte{}, errors.New("bzip2 decompression not supported")
-	case CompADPCMStereo:
-		res, err = d2compression.WavDecompress(data, 2)
-	case CompADPCMMono:
-		res, err = d2compression.WavDecompress(data, 1)
-	case CompLZMA:
-		return []byte{}, errors.New("lzma decompression not supported")
-	// Combos
-	case CompHuffman | CompADPCMMono:
-		huff := d2compression.HuffmanDecompress(data)
-		if huff == nil {
-			return nil, errors.New("huffman decompression failed in combo 0x41")
-		}
-		res, err = d2compression.WavDecompress(huff, 1)
-	case CompHuffman | CompADPCMStereo:
-		huff := d2compression.HuffmanDecompress(data)
-		if huff == nil {
-			return nil, errors.New("huffman decompression failed in combo 0x81")
-		}
-		res, err = d2compression.WavDecompress(huff, 2)
-	case CompPKLib | CompADPCMMono:
-		return []byte{}, errors.New("pk + mpqwav mono decompression not supported")
-	case CompPKLib | CompADPCMStereo:
-		return []byte{}, errors.New("pk + mpqwav stereo decompression not supported")
-	case CompSparse | CompDeflate:
-		return []byte{}, errors.New("sparse + deflate decompression not supported")
-	case CompSparse | CompBZip2:
-		return []byte{}, errors.New("sparse + bzip2 decompression not supported")
-	default:
-		return []byte{}, fmt.Errorf("decompression not supported for mask %X", mask)
-	}
-
+	res, err = decompressByMask(compressionMask, remainingData, expectedLength)
 	if err != nil {
 		return nil, err
 	}
@@ -346,6 +336,72 @@ func decompressByMask(mask uint8, data []byte, expectedLength uint32) ([]byte, e
 		return nil, fmt.Errorf("decompressed size mismatch: got %d, expected %d", len(res), expectedLength)
 	}
 
+	return res, nil
+}
+
+func decompressByMask(mask byte, data []byte, expectedLength uint32) ([]byte, error) {
+	// Check for combined compression types
+	// These are processed in a specific order if multiple bits are set
+	// For standard D2 MPQs, these are usually single bits or specific combos like 0x41, 0x81
+
+	// If it's a known combo, handle it
+	switch mask {
+	case 0x41: // Huffman + Wav Mono
+		huff, err := decompressHuffman(data)
+		if err != nil {
+			return nil, err
+		}
+		return d2compression.WavDecompress(huff, 1)
+	case 0x81: // Huffman + Wav Stereo
+		huff, err := decompressHuffman(data)
+		if err != nil {
+			return nil, err
+		}
+		return d2compression.WavDecompress(huff, 2)
+	}
+
+	// Single algorithms
+	switch mask {
+	case 1: // Huffman
+		return decompressHuffman(data)
+	case 2: // ZLib/Deflate
+		return deflate(data)
+	case 8: // PKLib/Implode
+		return pkDecompress(data)
+	case 0x10: // BZip2
+		return nil, errors.New("bzip2 decompression (0x10) not supported")
+	case 0x40: // IMA ADPCM Mono
+		return d2compression.WavDecompress(data, 1)
+	case 0x80: // IMA ADPCM Stereo
+		return d2compression.WavDecompress(data, 2)
+	case 0x12:
+		return nil, errors.New("lzma decompression (0x12) not supported")
+	case 0x22:
+		return nil, errors.New("sparse decompression + deflate decompression (0x22) not supported")
+	case 0x30:
+		return nil, errors.New("sparse decompression + bzip2 decompression (0x30) not supported")
+	case 0x48:
+		return []byte{}, errors.New("pk + mpqwav decompression (0x48) not supported")
+	case 0x81:
+		huff := d2compression.HuffmanDecompress(data[1:])
+		if huff == nil {
+			return nil, errors.New("huffman decompression failed in combo 0x81")
+		}
+		res, err = d2compression.WavDecompress(huff, 2)
+	case 0x88:
+		return []byte{}, errors.New("pk + wav decompression (0x88) not supported")
+	default:
+		return []byte{}, fmt.Errorf("decompression not supported for mask %X", mask)
+	}
+
+	return nil, fmt.Errorf("decompression not supported for unknown compression type %X", mask)
+}
+
+func decompressHuffman(data []byte) ([]byte, error) {
+	res := d2compression.HuffmanDecompress(data)
+	if res == nil {
+		return nil, errors.New("huffman decompression failed")
+	}
 	return res, nil
 }
 

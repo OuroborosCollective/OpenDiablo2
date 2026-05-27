@@ -1,3 +1,4 @@
+//go:build !release
 // +build !release
 
 package d2app
@@ -9,7 +10,7 @@ func (a *App) initDebugCommands() {
 		args []string
 		fn   func(args []string) error
 	}{
-		{"js", "eval JS scripts", []string{"code"}, a.evalJS},
+		// Add debug commands here
 	}
 
 	for _, cmd := range debugCommands {
@@ -17,16 +18,4 @@ func (a *App) initDebugCommands() {
 			a.Fatalf("failed to bind debug action %q: %v", cmd.name, err.Error())
 		}
 	}
-}
-
-func (a *App) evalJS(args []string) error {
-	val, err := a.scriptEngine.Eval(args[0])
-	if err != nil {
-		a.terminal.Errorf(err.Error())
-		return nil
-	}
-
-	a.Info("%s" + val)
-
-	return nil
 }
