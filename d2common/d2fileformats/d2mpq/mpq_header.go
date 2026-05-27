@@ -32,5 +32,7 @@ func (mpq *MPQ) readHeader() error {
 		return errors.New("invalid mpq header")
 	}
 
+	mpq.crypto = newCrypto()
+
 	return nil
 }

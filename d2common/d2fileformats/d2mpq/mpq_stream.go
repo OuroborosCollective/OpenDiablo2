@@ -215,7 +215,7 @@ func (v *Stream) loadSingleUnit() (err error) {
 			return errors.New("unable to determine encryption key")
 		}
 
-		decryptBytes(fileData, v.Block.EncryptionSeed)
+		v.MPQ.crypto.decryptBytes(fileData, v.Block.EncryptionSeed)
 	}
 
 	if v.Block.CompressedFileSize == v.Block.UncompressedFileSize {
@@ -382,19 +382,11 @@ func decompressByMask(mask byte, data []byte, expectedLength uint32) ([]byte, er
 		return nil, errors.New("sparse decompression + bzip2 decompression (0x30) not supported")
 	case 0x48:
 		return []byte{}, errors.New("pk + mpqwav decompression (0x48) not supported")
-	case 0x81:
-		huff := d2compression.HuffmanDecompress(data[1:])
-		if huff == nil {
-			return nil, errors.New("huffman decompression failed in combo 0x81")
-		}
-		res, err = d2compression.WavDecompress(huff, 2)
 	case 0x88:
 		return []byte{}, errors.New("pk + wav decompression (0x88) not supported")
 	default:
 		return []byte{}, fmt.Errorf("decompression not supported for mask %X", mask)
 	}
-
-	return nil, fmt.Errorf("decompression not supported for unknown compression type %X", mask)
 }
 
 func decompressHuffman(data []byte) ([]byte, error) {

@@ -141,7 +141,7 @@ func (mpq *MPQ) ReadTextFile(fileName string) (string, error) {
 		return "", err
 	}
 
-	return string(data), nil
+	return string(data) + "\x00", nil
 }
 
 // Listfile returns the list of files in this MPQ
@@ -189,8 +189,8 @@ func openIgnoreCase(mpqPath string) (*os.File, error) {
 		mpqName := filepath.Base(mpqPath)
 		mpqDir := filepath.Dir(mpqPath)
 
-		var files []fs.DirEntry
-		files, err = os.ReadDir(mpqDir)
+		var entries []fs.DirEntry
+		entries, err = os.ReadDir(mpqDir)
 
 		if err != nil {
 			return nil, err

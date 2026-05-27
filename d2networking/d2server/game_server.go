@@ -9,6 +9,7 @@ import (
 	"net"
 	"sync"
 	"time"
+	"strings"
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2enum"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2util"
@@ -109,18 +110,6 @@ func NewGameServer(asset *d2asset.AssetManager,
 	gameServer.Logger = d2util.NewLogger()
 	gameServer.Logger.SetPrefix(logPrefix)
 	gameServer.Logger.SetLevel(l)
-
-	// Initialize Axiomatic Systems and register rules
-	kappa := gameServer.scriptEngine.BaalAal.KappaSystem
-	worldSys := d2script.NewWorldSystem()
-	combatSys := &d2script.CombatSystem{}
-	itemSys := &d2script.ItemSystem{}
-
-	gameServer.scriptEngine.BaalAal.RegisterRule("PlayerMove", gameServer.scriptEngine.BaalAal.KappaSystem.HandleMove)
-	gameServer.scriptEngine.BaalAal.RegisterRule("PLAYER_MOVE", gameServer.scriptEngine.BaalAal.KappaSystem.HandleMove)
-	gameServer.scriptEngine.BaalAal.RegisterRule("WorldEmergence", worldSys.HandleEmergence)
-	gameServer.scriptEngine.BaalAal.RegisterRule("9", combatSys.HandleCast)
-	gameServer.scriptEngine.BaalAal.RegisterRule("10", itemSys.HandleSpawn)
 
 	mapEngine := d2mapengine.CreateMapEngine(l, asset)
 	mapEngine.SetSeed(gameServer.seed)

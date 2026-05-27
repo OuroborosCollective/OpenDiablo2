@@ -74,7 +74,6 @@ func TestBaalAalEngine_RecursivePublish(t *testing.T) {
 }
 
 func TestKappaSystem_HandleMove(t *testing.T) {
-func TestKappaSystem_processMove(t *testing.T) {
 	engine := NewBaalAalEngine()
 	ks := engine.KappaSystem
 	event := &IAxiomaticEvent{
@@ -86,7 +85,7 @@ func TestKappaSystem_processMove(t *testing.T) {
 		Metadata: make(map[string]interface{}),
 	}
 
-	ks.onEvent(event)
+	ks.HandleMove(event)
 
 	kx, xOk := event.Metadata["kappa_x"].(int32)
 	ky, yOk := event.Metadata["kappa_y"].(int32)
@@ -97,5 +96,50 @@ func TestKappaSystem_processMove(t *testing.T) {
 
 	if kx != 10500 || ky != 20700 {
 		t.Errorf("expected [10500, 20700], got [%d, %d]", kx, ky)
+	}
+}
+
+func TestCombatSystem_HandleCast(t *testing.T) {
+	compiler := &AREStateCompiler{}
+	cs := &CombatSystem{Compiler: compiler}
+	event := &IAxiomaticEvent{
+		SequenceID: 123,
+		Metadata: map[string]interface{}{
+			"client_id": "player-1",
+		},
+	}
+
+	cs.HandleCast(event)
+
+	res, ok := event.Metadata["deterministic_resonance"].(float32)
+	if !ok {
+		t.Fatal("expected deterministic_resonance in metadata")
+	}
+	if res <= 0 || res >= 1 {
+		t.Errorf("unexpected resonance value: %f", res)
+	}
+}
+
+func TestItemSystem_HandleSpawn(t *testing.T) {
+	compiler := &AREStateCompiler{}
+	is := &ItemSystem{Compiler: compiler}
+	event := &IAxiomaticEvent{
+		Payload: map[string]interface{}{
+			"x": 100.1,
+			"y": 200.2,
+		},
+	}
+
+	is.HandleSpawn(event)
+
+	kx, xOk := event.Metadata["kappa_x"].(int32)
+	ky, yOk := event.Metadata["kappa_y"].(int32)
+
+	if !xOk || !yOk {
+		t.Fatal("expected kappa coordinates in metadata")
+	}
+
+	if kx != 100100 || ky != 200200 {
+		t.Errorf("expected [100100, 200200], got [%d, %d]", kx, ky)
 	}
 }
