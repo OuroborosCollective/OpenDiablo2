@@ -204,6 +204,22 @@ func (k *KappaSystem) HandleMove(event *IAxiomaticEvent) {
 	if moveData, ok := event.Payload.(map[string]interface{}); ok {
 		x, xOk := moveData["x"].(float64)
 		y, yOk := moveData["y"].(float64)
+
+		if xOk && yOk {
+			kx := k.engine.Compiler.ToKappa(x)
+			ky := k.engine.Compiler.ToKappa(y)
+
+			if event.Metadata == nil {
+				event.Metadata = make(map[string]interface{})
+			}
+			event.Metadata["kappa_x"] = kx
+			event.Metadata["kappa_y"] = ky
+
+			if clientID, ok := event.Metadata["client_id"].(string); ok {
+				k.Lock()
+				k.Positions[clientID] = []int32{kx, ky}
+				k.Unlock()
+			}
 		if xOk && yOk {
 			if event.Metadata == nil {
 				event.Metadata = make(map[string]interface{})
@@ -302,19 +318,32 @@ func (i *ItemSystem) HandleSpawn(event *IAxiomaticEvent) {
 type WorldSystem struct {
 	sync.RWMutex
 	GlobalResonance float64
+	Expansion       float64
+	Entropy         float64
 }
 
 func NewWorldSystem() *WorldSystem {
 	return &WorldSystem{
 		GlobalResonance: 1.0,
+		Expansion:       1.0,
+		Entropy:         0.5,
 	}
 }
 
 func (w *WorldSystem) HandleEmergence(event *IAxiomaticEvent) {
+	w.Lock()
+	defer w.Unlock()
+
 	if resonance, ok := event.Payload.(float64); ok {
-		w.Lock()
-		defer w.Unlock()
 		w.GlobalResonance = resonance
+	}
+
+	if expansion, ok := event.Metadata["expansion"].(float64); ok {
+		w.Expansion = expansion
+	}
+
+	if entropy, ok := event.Metadata["entropy"].(float64); ok {
+		w.Entropy = entropy
 	}
 }
 
