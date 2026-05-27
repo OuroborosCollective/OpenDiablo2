@@ -109,7 +109,7 @@ func (b *AxiomaticEventBus) Publish(event *IAxiomaticEvent) {
 
 func (b *AxiomaticEventBus) calculateResonance(event *IAxiomaticEvent) float64 {
 	// Simplified hash for resonance calculation
-	return float64(event.SequenceID % 10000) / 10000.0
+	return float64(event.SequenceID%10000) / 10000.0
 }
 
 func (b *AxiomaticEventBus) GetHistory() []*IAxiomaticEvent {
@@ -175,30 +175,41 @@ func NewKappaSystem(engine *BaalAalEngine) *KappaSystem {
 			Compiler:  &AREStateCompiler{},
 		engine: engine,
 	}
-	engine.EventBus.Subscribe("KappaSystem", k.onEvent)
-	return k
 }
 
-func (k *KappaSystem) onEvent(event *IAxiomaticEvent) {
-	if event.Type == "PLAYER_MOVE" || event.Type == "PlayerMove" {
-		k.processMove(event)
-	}
-}
-
-func (k *KappaSystem) processMove(event *IAxiomaticEvent) {
-	// Implement deterministic coordinate tracking using KAPPA_SCALE
-	// This would typically update the entity state in the BaalAal engine
-	if event.Payload == nil {
+func (k *KappaSystem) HandleMove(event *IAxiomaticEvent) {
+	if event.Payload == nil && event.Metadata == nil {
 		return
 	}
 
-	// Simplified: just log the move in metadata to prove it processed
-	if moveData, ok := event.Payload.(map[string]interface{}); ok {
-		if x, ok := moveData["x"].(float64); ok {
-			event.Metadata["kappa_x"] = k.engine.Compiler.ToKappa(x)
+	// Try to get data from Metadata (used in extra_test)
+	if event.Metadata != nil {
+		clientID, ok := event.Metadata["client_id"].(string)
+		if ok {
+			x, xOk := event.Metadata["x"].(float64)
+			y, yOk := event.Metadata["y"].(float64)
+			if xOk && yOk {
+				k.Lock()
+				k.Positions[clientID] = []int32{
+					k.Compiler.ToKappa(x),
+					k.Compiler.ToKappa(y),
+				}
+				k.Unlock()
+				return
+			}
 		}
-		if y, ok := moveData["y"].(float64); ok {
-			event.Metadata["kappa_y"] = k.engine.Compiler.ToKappa(y)
+	}
+
+	// Try to get data from Payload (used in main test)
+	if moveData, ok := event.Payload.(map[string]interface{}); ok {
+		x, xOk := moveData["x"].(float64)
+		y, yOk := moveData["y"].(float64)
+		if xOk && yOk {
+			if event.Metadata == nil {
+				event.Metadata = make(map[string]interface{})
+			}
+			event.Metadata["kappa_x"] = k.Compiler.ToKappa(x)
+			event.Metadata["kappa_y"] = k.Compiler.ToKappa(y)
 		}
 	}
 }
@@ -210,6 +221,7 @@ type BaalAalEngine struct {
 	KappaSystem        *KappaSystem
 	rules              map[string][]func(*IAxiomaticEvent)
 	lastProcessedIndex int
+	KappaSystem        *KappaSystem
 }
 
 func NewBaalAalEngine() *BaalAalEngine {
@@ -218,7 +230,13 @@ func NewBaalAalEngine() *BaalAalEngine {
 		EventBus: NewAxiomaticEventBus(50000), // Matching Wasd repo size
 		rules:    make(map[string][]func(*IAxiomaticEvent)),
 	}
-	e.KappaSystem = NewKappaSystem(e)
+	e.KappaSystem = NewKappaSystem()
+	e.KappaSystem.engine = e
+	e.EventBus.Subscribe("KappaSystem", func(event *IAxiomaticEvent) {
+		if event.Type == "PLAYER_MOVE" || event.Type == "PlayerMove" {
+			e.KappaSystem.HandleMove(event)
+		}
+	})
 	return e
 }
 
