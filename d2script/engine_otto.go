@@ -50,6 +50,11 @@ func (s *ScriptEngine) RunScript(fileName string) (val *otto.Value, err error) {
 		return nil, err
 	}
 
+	return s.Eval(string(fileData))
+}
+
+// Eval runs the given script string.
+func (s *ScriptEngine) Eval(script string) (val *otto.Value, err error) {
 	vm := s.getVM()
 	interrupt := make(chan func(), 1)
 	vm.Interrupt = interrupt
@@ -71,7 +76,7 @@ func (s *ScriptEngine) RunScript(fileName string) (val *otto.Value, err error) {
 		}
 	}()
 
-	res, err := vm.Run(string(fileData))
+	res, err := vm.Run(script)
 	if err != nil {
 		fmt.Printf("Error running script: %s\n", err.Error())
 		return nil, err

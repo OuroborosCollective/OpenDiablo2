@@ -182,25 +182,24 @@ func (k *KappaSystem) HandleMove(event *IAxiomaticEvent) {
 		return
 	}
 
-	// Try to get data from Metadata (used in extra_test)
-	if event.Metadata != nil {
-		clientID, ok := event.Metadata["client_id"].(string)
-		if ok {
-			x, xOk := event.Metadata["x"].(float64)
-			y, yOk := event.Metadata["y"].(float64)
-			if xOk && yOk {
-				k.Lock()
-				k.Positions[clientID] = []int32{
-					k.Compiler.ToKappa(x),
-					k.Compiler.ToKappa(y),
-				}
-				k.Unlock()
+	if event.Metadata == nil {
+		event.Metadata = make(map[string]interface{})
+	}
 
-				// Update metadata to prove it processed
-				event.Metadata["kappa_x"] = k.Compiler.ToKappa(x)
-				event.Metadata["kappa_y"] = k.Compiler.ToKappa(y)
-				return
-			}
+	// Try to get data from Metadata (used in extra_test)
+	clientID, ok := event.Metadata["client_id"].(string)
+	if ok {
+		x, xOk := event.Metadata["x"].(float64)
+		y, yOk := event.Metadata["y"].(float64)
+		if xOk && yOk {
+			kx := k.Compiler.ToKappa(x)
+			ky := k.Compiler.ToKappa(y)
+			event.Metadata["kappa_x"] = kx
+			event.Metadata["kappa_y"] = ky
+			k.Lock()
+			k.Positions[clientID] = []int32{kx, ky}
+			k.Unlock()
+			return
 		}
 	}
 
@@ -247,10 +246,6 @@ func NewBaalAalEngine() *BaalAalEngine {
 		rules:    make(map[string][]func(*IAxiomaticEvent)),
 	}
 	e.KappaSystem = NewKappaSystem(e)
-	e.CombatSystem = &CombatSystem{Compiler: e.Compiler}
-	e.ItemSystem = &ItemSystem{Compiler: e.Compiler}
-	e.WorldSystem = NewWorldSystem()
-
 	e.EventBus.Subscribe("KappaSystem", func(event *IAxiomaticEvent) {
 		if event.Type == "PLAYER_MOVE" || event.Type == "PlayerMove" {
 			e.KappaSystem.HandleMove(event)
