@@ -54,6 +54,12 @@ func (mr *MapRenderer) generateTileCache() {
 }
 
 func (mr *MapRenderer) generateFloorCache(tile *d2ds1.Tile) {
+	if !tile.Animated {
+		if mr.getImageCacheRecord(tile.Style, tile.Sequence, 0, tile.RandomIndex) != nil {
+			return
+		}
+	}
+
 	tileOptions := mr.mapEngine.GetTiles(int(tile.Style), int(tile.Sequence), 0)
 
 	var tileData []*d2dt1.Tile
@@ -87,7 +93,7 @@ func (mr *MapRenderer) generateFloorCache(tile *d2ds1.Tile) {
 		cachedImage := mr.getImageCacheRecord(tile.Style, tile.Sequence, 0, tileIndex)
 
 		if cachedImage != nil {
-			return
+			continue
 		}
 
 		tileYMinimum := int32(0)
@@ -111,6 +117,10 @@ func (mr *MapRenderer) generateFloorCache(tile *d2ds1.Tile) {
 }
 
 func (mr *MapRenderer) generateShadowCache(tile *d2ds1.Tile) {
+	if cachedImage := mr.getImageCacheRecord(tile.Style, tile.Sequence, d2enum.TileShadow, tile.RandomIndex); cachedImage != nil {
+		return
+	}
+
 	tileOptions := mr.mapEngine.GetTiles(int(tile.Style), int(tile.Sequence), d2enum.TileShadow)
 
 	var tileData *d2dt1.Tile
@@ -137,11 +147,6 @@ func (mr *MapRenderer) generateShadowCache(tile *d2ds1.Tile) {
 	tileHeight := int(tileMaxY - tileMinY)
 	tile.YAdjust = int(tileMinY + shadowAdjustY)
 
-	cachedImage := mr.getImageCacheRecord(tile.Style, tile.Sequence, d2enum.TileShadow, tile.RandomIndex)
-	if cachedImage != nil {
-		return
-	}
-
 	image := mr.renderer.NewSurface(int(tileData.Width), tileHeight)
 
 	indexData := make([]byte, tileData.Width*int32(tileHeight))
@@ -154,6 +159,10 @@ func (mr *MapRenderer) generateShadowCache(tile *d2ds1.Tile) {
 }
 
 func (mr *MapRenderer) generateWallCache(tile *d2ds1.Tile) {
+	if cachedImage := mr.getImageCacheRecord(tile.Style, tile.Sequence, tile.Type, tile.RandomIndex); cachedImage != nil {
+		return
+	}
+
 	tileOptions := mr.mapEngine.GetTiles(int(tile.Style), int(tile.Sequence), tile.Type)
 
 	var tileData *d2dt1.Tile
@@ -195,11 +204,6 @@ func (mr *MapRenderer) generateWallCache(tile *d2ds1.Tile) {
 		tile.YAdjust = -int(tileData.RoofHeight)
 	} else {
 		tile.YAdjust = int(tileMinY) + tileSurfaceHeight
-	}
-
-	cachedImage := mr.getImageCacheRecord(tile.Style, tile.Sequence, tile.Type, tile.RandomIndex)
-	if cachedImage != nil {
-		return
 	}
 
 	if realHeight == 0 {
