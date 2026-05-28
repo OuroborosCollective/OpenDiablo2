@@ -141,7 +141,7 @@ func (mpq *MPQ) ReadTextFile(fileName string) (string, error) {
 		return "", err
 	}
 
-	return string(data), nil
+	return string(data) + "\x00", nil
 }
 
 // Listfile returns the list of files in this MPQ

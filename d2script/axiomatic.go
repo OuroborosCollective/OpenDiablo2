@@ -209,8 +209,8 @@ func (k *KappaSystem) HandleMove(event *IAxiomaticEvent) {
 		y, yOk := moveData["y"].(float64)
 
 		if xOk && yOk {
-			kx := k.engine.Compiler.ToKappa(x)
-			ky := k.engine.Compiler.ToKappa(y)
+			kx := k.Compiler.ToKappa(x)
+			ky := k.Compiler.ToKappa(y)
 
 			if event.Metadata == nil {
 				event.Metadata = make(map[string]interface{})
@@ -232,6 +232,9 @@ type BaalAalEngine struct {
 	Compiler           *AREStateCompiler
 	EventBus           *AxiomaticEventBus
 	KappaSystem        *KappaSystem
+	CombatSystem       *CombatSystem
+	ItemSystem         *ItemSystem
+	WorldSystem        *WorldSystem
 	rules              map[string][]func(*IAxiomaticEvent)
 	lastProcessedIndex int
 }
@@ -248,6 +251,15 @@ func NewBaalAalEngine() *BaalAalEngine {
 			e.KappaSystem.HandleMove(event)
 		}
 	})
+
+	e.RegisterRule("PlayerMove", e.KappaSystem.HandleMove)
+	e.RegisterRule("PLAYER_MOVE", e.KappaSystem.HandleMove)
+	e.RegisterRule("WorldEmergence", e.WorldSystem.HandleEmergence)
+
+	// Network packet types as strings
+	e.RegisterRule("9", e.CombatSystem.HandleCast)
+	e.RegisterRule("10", e.ItemSystem.HandleSpawn)
+
 	return e
 }
 
@@ -296,17 +308,50 @@ func (e *BaalAalEngine) ProcessCycle(tick uint64) {
 }
 
 // CombatSystem handles axiomatic combat events.
-type CombatSystem struct{}
+type CombatSystem struct {
+	Compiler *AREStateCompiler
+}
 
 func (c *CombatSystem) HandleCast(event *IAxiomaticEvent) {
-	// Logic for skill casting will be integrated here
+	if event.Metadata == nil {
+		event.Metadata = make(map[string]interface{})
+	}
+
+	// Use SequenceID as pseudo-tick for deterministic resonance
+	var entityID uint32
+	if clientID, ok := event.Metadata["client_id"].(string); ok {
+		for _, char := range clientID {
+			entityID += uint32(char)
+		}
+	}
+
+	resonance := c.Compiler.GetDeterministicResonance(event.SequenceID, entityID)
+	event.Metadata["deterministic_resonance"] = resonance
 }
 
 // ItemSystem handles axiomatic item events.
-type ItemSystem struct{}
+type ItemSystem struct {
+	Compiler *AREStateCompiler
+}
 
 func (i *ItemSystem) HandleSpawn(event *IAxiomaticEvent) {
-	// Logic for item spawning will be integrated here
+	if event.Payload == nil {
+		return
+	}
+
+	if event.Metadata == nil {
+		event.Metadata = make(map[string]interface{})
+	}
+
+	// Try to extract coordinates from payload and convert to Kappa
+	if data, ok := event.Payload.(map[string]interface{}); ok {
+		if x, ok := data["x"].(float64); ok {
+			event.Metadata["kappa_x"] = i.Compiler.ToKappa(x)
+		}
+		if y, ok := data["y"].(float64); ok {
+			event.Metadata["kappa_y"] = i.Compiler.ToKappa(y)
+		}
+	}
 }
 
 // WorldSystem tracks global deterministic world state.

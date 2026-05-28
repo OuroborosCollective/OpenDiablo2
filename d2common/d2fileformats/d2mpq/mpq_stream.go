@@ -387,8 +387,6 @@ func decompressByMask(mask byte, data []byte, expectedLength uint32) ([]byte, er
 	default:
 		return []byte{}, fmt.Errorf("decompression not supported for mask %X", mask)
 	}
-
-	return nil, fmt.Errorf("decompression not supported for unknown compression type %X", mask)
 }
 
 func decompressHuffman(data []byte) ([]byte, error) {
