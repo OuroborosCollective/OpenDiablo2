@@ -55,7 +55,7 @@ func TestKappaSystem_ProcessMove(t *testing.T) {
 		},
 	}
 
-	engine.EventBus.Publish(event)
+	engine.KappaSystem.HandleMove(event)
 
 	if event.Metadata["kappa_x"] != int32(10500) {
 		t.Errorf("expected kappa_x 10500, got %v", event.Metadata["kappa_x"])
