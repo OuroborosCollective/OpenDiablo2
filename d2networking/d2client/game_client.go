@@ -160,6 +160,10 @@ func (g *GameClient) OnPacketReceived(packet d2netpacket.NetPacket) error {
 	case d2netpackettype.ServerFull:
 		g.Infof("Server is full") // need to be verified
 		os.Exit(0)
+	case d2netpackettype.AxiomaticStatus:
+		if err := g.handleAxiomaticStatusPacket(packet); err != nil {
+			return err
+		}
 	default:
 		g.Fatalf("Invalid packet type: %d", packet.PacketType)
 	}
@@ -225,6 +229,13 @@ func (g *GameClient) handleSpawnItemPacket(packet d2netpacket.NetPacket) error {
 		return err
 	}
 
+	// Dispatch Axiomatic event
+	g.scriptEngine.DispatchEvent(&d2script.IAxiomaticEvent{
+		ID:      fmt.Sprintf("%d-Spawn", packet.PacketType),
+		Type:    fmt.Sprintf("%d", packet.PacketType),
+		Payload: item,
+	})
+
 	itemEntity, err := g.MapEngine.NewItem(item.X, item.Y, item.Codes...)
 
 	if err == nil {
@@ -239,6 +250,18 @@ func (g *GameClient) handleMovePlayerPacket(packet d2netpacket.NetPacket) error 
 	if err != nil {
 		return err
 	}
+
+	// Dispatch Axiomatic event
+	g.scriptEngine.DispatchEvent(&d2script.IAxiomaticEvent{
+		ID:      "MoveEvent-" + movePlayer.PlayerID,
+		Type:    "PlayerMove",
+		Payload: movePlayer,
+		Metadata: map[string]interface{}{
+			"client_id": movePlayer.PlayerID,
+			"x":         movePlayer.DestX,
+			"y":         movePlayer.DestY,
+		},
+	})
 
 	player := g.Players[movePlayer.PlayerID]
 	start := d2vector.NewPositionTile(movePlayer.StartX, movePlayer.StartY)
@@ -273,6 +296,16 @@ func (g *GameClient) handleCastSkillPacket(packet d2netpacket.NetPacket) error {
 	if err != nil {
 		return err
 	}
+
+	// Dispatch Axiomatic event
+	g.scriptEngine.DispatchEvent(&d2script.IAxiomaticEvent{
+		ID:      fmt.Sprintf("%d-%s", packet.PacketType, playerCast.SourceEntityID),
+		Type:    fmt.Sprintf("%d", packet.PacketType),
+		Payload: playerCast,
+		Metadata: map[string]interface{}{
+			"client_id": playerCast.SourceEntityID,
+		},
+	})
 
 	player := g.Players[playerCast.SourceEntityID]
 	player.StopMoving()
@@ -446,6 +479,25 @@ func (g *GameClient) handlePlayerDisconnectionPacket(packet d2netpacket.NetPacke
 	player := g.Players[disconnectPacket.ID]
 	g.MapEngine.RemoveEntity(player)
 	delete(g.Players, disconnectPacket.ID)
+
+	return nil
+}
+
+func (g *GameClient) handleAxiomaticStatusPacket(packet d2netpacket.NetPacket) error {
+	status, err := d2netpacket.UnmarshalAxiomaticStatus(packet.PacketData)
+	if err != nil {
+		return err
+	}
+
+	// Dispatch WorldEmergence event to sync client axiomatic state
+	g.scriptEngine.DispatchEvent(&d2script.IAxiomaticEvent{
+		ID:      "WorldEmergence-Sync",
+		Type:    "WorldEmergence",
+		Payload: status.Resonance,
+		Metadata: map[string]interface{}{
+			"cycle": status.Cycle,
+		},
+	})
 
 	return nil
 }

@@ -117,6 +117,8 @@ type Game struct {
 	escapeMenu           *d2player.EscapeMenu
 	soundEngine          *d2audio.SoundEngine
 	soundEnv             d2audio.SoundEnvironment
+	axiomaticAccumulator float64
+	axiomaticTick        uint64
 	guiManager           *d2gui.GuiManager
 	keyMap               *d2player.KeyMap
 	config               *d2config.Configuration
@@ -231,6 +233,16 @@ func (v *Game) Advance(elapsed float64) error {
 	v.soundEngine.Advance(elapsed)
 
 	if (v.escapeMenu != nil && !v.escapeMenu.IsOpen()) || len(v.gameClient.Players) != 1 {
+		// Process Axiomatic cycles (deterministic rules engine)
+		v.axiomaticAccumulator += elapsed
+		for v.axiomaticAccumulator >= 0.1 { // 100ms interval
+			v.axiomaticAccumulator -= 0.1
+			if v.gameClient.scriptEngine != nil && v.gameClient.scriptEngine.BaalAal != nil {
+				v.gameClient.scriptEngine.BaalAal.ProcessCycle(v.axiomaticTick)
+			}
+			v.axiomaticTick++
+		}
+
 		v.gameClient.MapEngine.Advance(elapsed)
 	}
 
