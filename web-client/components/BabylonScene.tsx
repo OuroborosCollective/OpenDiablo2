@@ -43,6 +43,14 @@ const BabylonScene: React.FC<BabylonSceneProps> = ({ onAxiomaticUpdate, onAssetM
     player.material = playerMat;
     playerRef.current = player;
 
+    // Target Marker for mobile feedback
+    const marker = MeshBuilder.CreateTorus("marker", { diameter: 1, thickness: 0.1 }, scene);
+    marker.isVisible = false;
+    const markerMat = new StandardMaterial("markerMat", scene);
+    markerMat.diffuseColor = new Color3(0, 1, 0);
+    markerMat.emissiveColor = new Color3(0, 0.5, 0);
+    marker.material = markerMat;
+
     // WebSocket Setup
     const ws = new WebSocket("ws://" + window.location.hostname + ":6670/ws");
     socketRef.current = ws;
@@ -99,6 +107,11 @@ const BabylonScene: React.FC<BabylonSceneProps> = ({ onAxiomaticUpdate, onAssetM
           const destX = pickResult.pickedPoint.x;
           const destY = pickResult.pickedPoint.z;
 
+          // Show marker at click location
+          marker.position.set(destX, 0.1, destY);
+          marker.isVisible = true;
+          marker.scaling.set(1, 1, 1);
+
           if (ws.readyState === WebSocket.OPEN) {
             const movePacket = {
               packetType: PacketType.MovePlayer,
@@ -116,6 +129,12 @@ const BabylonScene: React.FC<BabylonSceneProps> = ({ onAxiomaticUpdate, onAssetM
     };
 
     engine.runRenderLoop(() => {
+      if (marker.isVisible) {
+        marker.rotation.y += 0.05;
+        marker.scaling.x *= 0.98;
+        marker.scaling.z *= 0.98;
+        if (marker.scaling.x < 0.1) marker.isVisible = false;
+      }
       scene.render();
     });
 
