@@ -1,0 +1,13 @@
+<<<<<<< SEARCH
+// Set3DBias sets the 3D bias for the audio provider
+func (eap *AudioProvider) Set3DBias(bias float64) {
+	// TODO: implement 3D bias
+	eap.Infof("Setting 3D bias to %f", bias)
+}
+=======
+// Set3DBias sets the 3D bias for the audio provider
+func (eap *AudioProvider) Set3DBias(bias float64) {
+	eap.threeDBias = bias
+	eap.Infof("Setting 3D bias to %f", bias)
+}
+>>>>>>> REPLACE

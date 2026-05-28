@@ -42,6 +42,7 @@ type AudioProvider struct {
 	lastBgm      string
 	sfxVolume    float64
 	bgmVolume    float64
+	threeDBias   float64
 
 	*d2util.Logger
 }
@@ -175,9 +176,11 @@ func (eap *AudioProvider) createSoundEffect(sfx string, context *audio.Context,
 	if loop {
 		s := audio.NewInfiniteLoop(d, d.Length())
 		result.panStream = newPanStreamFromReader(s)
+		result.panStream.threeDBias = eap.threeDBias
 		player, err = audio.NewPlayer(context, result.panStream)
 	} else {
 		result.panStream = newPanStreamFromReader(d)
+		result.panStream.threeDBias = eap.threeDBias
 		player, err = audio.NewPlayer(context, result.panStream)
 	}
 
@@ -192,6 +195,6 @@ func (eap *AudioProvider) createSoundEffect(sfx string, context *audio.Context,
 
 // Set3DBias sets the 3D bias for the audio provider
 func (eap *AudioProvider) Set3DBias(bias float64) {
-	// TODO: implement 3D bias
+	eap.threeDBias = bias
 	eap.Infof("Setting 3D bias to %f", bias)
 }

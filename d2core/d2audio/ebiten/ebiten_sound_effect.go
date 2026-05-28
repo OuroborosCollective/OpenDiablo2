@@ -11,6 +11,7 @@ import (
 type panStream struct {
 	io.ReadSeeker
 	pan  float64 // -1: left; 0: center; 1: right
+	threeDBias float64
 	Lock sync.Mutex
 }
 
@@ -22,6 +23,7 @@ func newPanStreamFromReader(src io.ReadSeeker) *panStream {
 	return &panStream{
 		ReadSeeker: src,
 		pan:        0,
+		threeDBias: 1.0,
 	}
 }
 
@@ -34,8 +36,9 @@ func (s *panStream) Read(p []byte) (n int, err error) {
 		return
 	}
 
-	ls := math.Min(s.pan*-1+1, 1)
-	rs := math.Min(s.pan+1, 1)
+	effectivePan := s.pan * s.threeDBias
+	ls := math.Min(effectivePan*-1+1, 1)
+	rs := math.Min(effectivePan+1, 1)
 
 	for i := 0; i < len(p); i += 4 {
 		lc := int16(float64(int16(p[i])|int16(p[i+1])<<bitsPerByte) * ls)

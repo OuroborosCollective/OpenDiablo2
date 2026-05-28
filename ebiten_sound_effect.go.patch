@@ -1,0 +1,8 @@
+<<<<<<< SEARCH
+	ls := math.Min(s.pan*-1+1, 1)
+	rs := math.Min(s.pan+1, 1)
+=======
+	effectivePan := s.pan * s.threeDBias
+	ls := math.Min(effectivePan*-1+1, 1)
+	rs := math.Min(effectivePan+1, 1)
+>>>>>>> REPLACE

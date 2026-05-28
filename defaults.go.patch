@@ -1,0 +1,31 @@
+<<<<<<< SEARCH
+		defaultGamma     = 1.0
+		defaultContrast  = 1.0
+	)
+
+	config := &Configuration{
+		FullScreen:      false,
+		TicksPerSecond:  -1,
+		RunInBackground: true,
+		VsyncEnabled:    true,
+		SfxVolume:       defaultSfxVolume,
+		BgmVolume:       defaultBgmVolume,
+		Gamma:           defaultGamma,
+		Contrast:        defaultContrast,
+=======
+		defaultGamma     = 1.0
+		defaultContrast  = 1.0
+		defaultThreeDBias = 1.0
+	)
+
+	config := &Configuration{
+		FullScreen:      false,
+		TicksPerSecond:  -1,
+		RunInBackground: true,
+		VsyncEnabled:    true,
+		SfxVolume:       defaultSfxVolume,
+		BgmVolume:       defaultBgmVolume,
+		Gamma:           defaultGamma,
+		Contrast:        defaultContrast,
+		ThreeDBias:      defaultThreeDBias,
+>>>>>>> REPLACE
