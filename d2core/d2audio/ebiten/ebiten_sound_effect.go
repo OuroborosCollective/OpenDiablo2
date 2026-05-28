@@ -4,24 +4,27 @@ import (
 	"io"
 	"math"
 	"sync"
+	"sync/atomic"
 
 	"github.com/hajimehoshi/ebiten/v2/audio"
 )
 
 type panStream struct {
 	io.ReadSeeker
-	pan  float64 // -1: left; 0: center; 1: right
-	Lock sync.Mutex
+	pan            float64 // -1: left; 0: center; 1: right
+	threeDBiasBits *uint64
+	Lock           sync.Mutex
 }
 
 const (
 	bitsPerByte = 8
 )
 
-func newPanStreamFromReader(src io.ReadSeeker) *panStream {
+func newPanStreamFromReader(src io.ReadSeeker, biasBits *uint64) *panStream {
 	return &panStream{
-		ReadSeeker: src,
-		pan:        0,
+		ReadSeeker:     src,
+		pan:            0,
+		threeDBiasBits: biasBits,
 	}
 }
 
@@ -34,8 +37,15 @@ func (s *panStream) Read(p []byte) (n int, err error) {
 		return
 	}
 
-	ls := math.Min(s.pan*-1+1, 1)
-	rs := math.Min(s.pan+1, 1)
+	bias := 1.0
+	if s.threeDBiasBits != nil {
+		bias = math.Float64frombits(atomic.LoadUint64(s.threeDBiasBits))
+	}
+
+	pan := s.pan * bias
+
+	ls := math.Min(pan*-1+1, 1)
+	rs := math.Min(pan+1, 1)
 
 	for i := 0; i < len(p); i += 4 {
 		lc := int16(float64(int16(p[i])|int16(p[i+1])<<bitsPerByte) * ls)

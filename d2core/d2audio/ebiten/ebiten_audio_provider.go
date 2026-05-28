@@ -3,6 +3,8 @@ package ebiten
 
 import (
 	"io"
+	"math"
+	"sync/atomic"
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2interface"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2util"
@@ -30,18 +32,21 @@ func CreateAudio(l d2util.LogLevel, am *d2asset.AssetManager) *AudioProvider {
 
 	result.audioContext = audio.NewContext(sampleRate)
 
+	atomic.StoreUint64(&result.threeDBiasBits, math.Float64bits(1.0))
+
 	return result
 }
 
 // AudioProvider represents a provider capable of playing audio
 type AudioProvider struct {
-	asset        *d2asset.AssetManager
-	audioContext *audio.Context // The Audio context
-	bgmAudio     *audio.Player  // The audio player
-	bgmStream    *wav.Stream
-	lastBgm      string
-	sfxVolume    float64
-	bgmVolume    float64
+	asset          *d2asset.AssetManager
+	audioContext   *audio.Context // The Audio context
+	bgmAudio       *audio.Player  // The audio player
+	bgmStream      *wav.Stream
+	lastBgm        string
+	sfxVolume      float64
+	bgmVolume      float64
+	threeDBiasBits uint64
 
 	*d2util.Logger
 }
@@ -174,10 +179,10 @@ func (eap *AudioProvider) createSoundEffect(sfx string, context *audio.Context,
 
 	if loop {
 		s := audio.NewInfiniteLoop(d, d.Length())
-		result.panStream = newPanStreamFromReader(s)
+		result.panStream = newPanStreamFromReader(s, &eap.threeDBiasBits)
 		player, err = audio.NewPlayer(context, result.panStream)
 	} else {
-		result.panStream = newPanStreamFromReader(d)
+		result.panStream = newPanStreamFromReader(d, &eap.threeDBiasBits)
 		player, err = audio.NewPlayer(context, result.panStream)
 	}
 
@@ -192,6 +197,6 @@ func (eap *AudioProvider) createSoundEffect(sfx string, context *audio.Context,
 
 // Set3DBias sets the 3D bias for the audio provider
 func (eap *AudioProvider) Set3DBias(bias float64) {
-	// TODO: implement 3D bias
+	atomic.StoreUint64(&eap.threeDBiasBits, math.Float64bits(bias))
 	eap.Infof("Setting 3D bias to %f", bias)
 }
