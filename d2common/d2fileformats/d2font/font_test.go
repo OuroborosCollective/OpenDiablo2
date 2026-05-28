@@ -42,6 +42,8 @@ func (m *mockSurface) PushTranslation(x, y int) {
 	m.translations = append(m.translations, [2]int{x, y})
 }
 
+func (m *mockSurface) PushContrast(contrast float64) {}
+
 func (m *mockSurface) PopN(n int) {
 	m.pops += n
 }

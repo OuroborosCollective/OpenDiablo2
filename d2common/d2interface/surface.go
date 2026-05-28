@@ -26,6 +26,7 @@ type Surface interface {
 	PushScale(x, y float64)
 	PushBrightness(brightness float64)
 	PushSaturation(saturation float64)
+	PushContrast(contrast float64)
 	Render(surface Surface)
 	// Renders a section of the surface enclosed by bounds
 	RenderSection(surface Surface, bound image.Rectangle)

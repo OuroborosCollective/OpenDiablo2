@@ -15,6 +15,7 @@ type surfaceState struct {
 	color          color.Color
 	brightness     float64
 	saturation     float64
+	contrast       float64
 	effect         d2enum.DrawEffect
 	skewX, skewY   float64
 	scaleX, scaleY float64

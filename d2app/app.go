@@ -692,8 +692,7 @@ func (a *App) applyGammaContrast(target d2interface.Surface) {
 	brightness := 0.5 + (a.config.Gamma-1.0)*0.1
 	target.PushBrightness(brightness)
 
-	// We'll use Saturation as a proxy for Contrast for now since Contrast isn't in the interface.
-	// Mapping 1-10 to 0.5 - 1.5 saturation.
+	// Mapping 1-10 to 0.5 - 1.5 contrast.
 	contrast := 0.5 + (a.config.Contrast-1.0)*0.1
-	target.PushSaturation(contrast)
+	target.PushContrast(contrast)
 }

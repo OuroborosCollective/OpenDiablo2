@@ -46,6 +46,7 @@ func createEbitenSurface(r *Renderer, img *ebiten.Image, currentState ...surface
 		effect:     d2enum.DrawEffectNone,
 		saturation: defaultSaturation,
 		brightness: defaultBrightness,
+		contrast:   defaultContrast,
 		skewX:      defaultSkewX,
 		skewY:      defaultSkewY,
 		scaleX:     defaultScaleX,
@@ -119,6 +120,12 @@ func (s *ebitenSurface) PushSaturation(saturation float64) {
 	s.stateCurrent.saturation = saturation
 }
 
+// PushContrast pushes a contrast value to the state stack
+func (s *ebitenSurface) PushContrast(contrast float64) {
+	s.stateStack = append(s.stateStack, s.stateCurrent)
+	s.stateCurrent.contrast = contrast
+}
+
 // Pop pops a state off of the state stack
 func (s *ebitenSurface) Pop() {
 	count := len(s.stateStack)
@@ -140,9 +147,7 @@ func (s *ebitenSurface) PopN(n int) {
 func (s *ebitenSurface) RenderSprite(sprite *d2ui.Sprite) {
 	opts := s.createDrawImageOptions()
 
-	if s.stateCurrent.brightness != 1 || s.stateCurrent.saturation != 1 {
-		opts.ColorM.ChangeHSV(0, s.stateCurrent.saturation, s.stateCurrent.brightness)
-	}
+	s.applyColorSettings(opts)
 
 	s.handleStateEffect(opts)
 
@@ -153,9 +158,7 @@ func (s *ebitenSurface) RenderSprite(sprite *d2ui.Sprite) {
 func (s *ebitenSurface) Render(sfc d2interface.Surface) {
 	opts := s.createDrawImageOptions()
 
-	if s.stateCurrent.brightness != 1 || s.stateCurrent.saturation != 1 {
-		opts.ColorM.ChangeHSV(0, s.stateCurrent.saturation, s.stateCurrent.brightness)
-	}
+	s.applyColorSettings(opts)
 
 	s.handleStateEffect(opts)
 
@@ -166,9 +169,7 @@ func (s *ebitenSurface) Render(sfc d2interface.Surface) {
 func (s *ebitenSurface) RenderSection(sfc d2interface.Surface, bound image.Rectangle) {
 	opts := s.createDrawImageOptions()
 
-	if s.stateCurrent.brightness != 0 {
-		opts.ColorM.ChangeHSV(0, s.stateCurrent.saturation, s.stateCurrent.brightness)
-	}
+	s.applyColorSettings(opts)
 
 	s.handleStateEffect(opts)
 
@@ -341,4 +342,16 @@ func (s *ebitenSurface) colorToColorM(clr color.Color) ebiten.ColorM {
 	s.colorMCache[key] = e
 
 	return e.colorMatrix
+}
+
+func (s *ebitenSurface) applyColorSettings(opts *ebiten.DrawImageOptions) {
+	if s.stateCurrent.brightness != 1 || s.stateCurrent.saturation != 1 {
+		opts.ColorM.ChangeHSV(0, s.stateCurrent.saturation, s.stateCurrent.brightness)
+	}
+
+	if s.stateCurrent.contrast != 1 {
+		c := s.stateCurrent.contrast
+		opts.ColorM.Scale(c, c, c, 1)
+		opts.ColorM.Translate((1-c)/2, (1-c)/2, (1-c)/2, 0)
+	}
 }

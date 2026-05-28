@@ -19,6 +19,8 @@ const (
 	screenHeight      = 600
 	defaultSaturation = 1.0
 	defaultBrightness = 1.0
+	defaultContrast   = 1.0
+	defaultGamma      = 1.0
 	defaultSkewX      = 0.0
 	defaultSkewY      = 0.0
 	defaultScaleX     = 1.0
@@ -38,6 +40,8 @@ type Renderer struct {
 	renderCallback
 	*d2util.GlyphPrinter
 	lastRenderError error
+	gamma           float64
+	contrast        float64
 }
 
 // Update calls the game's logical update function (the `Advance` method)
@@ -72,6 +76,8 @@ func (r *Renderer) Layout(_, _ int) (width, height int) {
 func CreateRenderer(cfg *d2config.Configuration) (*Renderer, error) {
 	result := &Renderer{
 		GlyphPrinter: d2util.NewDebugPrinter(),
+		gamma:        defaultGamma,
+		contrast:     defaultContrast,
 	}
 
 	if cfg != nil {
@@ -82,6 +88,9 @@ func CreateRenderer(cfg *d2config.Configuration) (*Renderer, error) {
 		ebiten.SetRunnableOnUnfocused(config.RunInBackground)
 		ebiten.SetVsyncEnabled(config.VsyncEnabled)
 		ebiten.SetMaxTPS(config.TicksPerSecond)
+
+		result.gamma = config.Gamma
+		result.contrast = config.Contrast
 	}
 
 	return result, nil
@@ -125,6 +134,7 @@ func (r *Renderer) CreateSurface(surface d2interface.Surface) (d2interface.Surfa
 		effect:     d2enum.DrawEffectNone,
 		saturation: defaultSaturation,
 		brightness: defaultBrightness,
+		contrast:   defaultContrast,
 		skewX:      defaultSkewX,
 		skewY:      defaultSkewY,
 		scaleX:     defaultScaleX,
@@ -184,10 +194,10 @@ func (r *Renderer) ShowPanicScreen(message string) {
 
 // SetGamma sets the gamma for the renderer
 func (r *Renderer) SetGamma(gamma float64) {
-	// TODO: implement gamma
+	r.gamma = gamma
 }
 
 // SetContrast sets the contrast for the renderer
 func (r *Renderer) SetContrast(contrast float64) {
-	// TODO: implement contrast
+	r.contrast = contrast
 }
