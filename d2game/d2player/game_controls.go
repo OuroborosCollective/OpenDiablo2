@@ -18,6 +18,7 @@ import (
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2map/d2mapengine"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2map/d2mapentity"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2map/d2maprenderer"
+	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2records"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2ui"
 )
 
@@ -93,46 +94,29 @@ const (
 	menuRightRectH = 400, 0, 400, 600
 )
 
-// NewGameControls creates a GameControls instance and returns a pointer to it
-// nolint:funlen // doesn't make sense to split this up
-func NewGameControls(
-	asset *d2asset.AssetManager,
-	renderer d2interface.Renderer,
-	hero *d2mapentity.Player,
-	mapEngine *d2mapengine.MapEngine,
-	escapeMenu *EscapeMenu,
-	mapRenderer *d2maprenderer.MapRenderer,
-	inputListener inputCallbackListener,
-	term d2interface.Terminal,
-	ui *d2ui.UIManager,
-	keyMap *KeyMap,
-	audioProvider d2interface.AudioProvider,
-	l d2util.LogLevel,
-	isSinglePlayer bool,
-	players map[string]*d2mapentity.Player,
-) (*GameControls, error) {
-	var inventoryRecordKey string
-
-	switch hero.Class {
+func getInventoryRecordKey(class d2enum.HeroClass) (string, error) {
+	switch class {
 	case d2enum.HeroAssassin:
-		inventoryRecordKey = "Assassin2"
+		return "Assassin2", nil
 	case d2enum.HeroAmazon:
-		inventoryRecordKey = "Amazon2"
+		return "Amazon2", nil
 	case d2enum.HeroBarbarian:
-		inventoryRecordKey = "Barbarian2"
+		return "Barbarian2", nil
 	case d2enum.HeroDruid:
-		inventoryRecordKey = "Druid2"
+		return "Druid2", nil
 	case d2enum.HeroNecromancer:
-		inventoryRecordKey = "Necromancer2"
+		return "Necromancer2", nil
 	case d2enum.HeroPaladin:
-		inventoryRecordKey = "Paladin2"
+		return "Paladin2", nil
 	case d2enum.HeroSorceress:
-		inventoryRecordKey = "Sorceress2"
+		return "Sorceress2", nil
 	default:
-		return nil, fmt.Errorf("unknown hero class: %d", hero.Class)
+		return "", fmt.Errorf("unknown hero class: %d", class)
 	}
+}
 
-	actionableRegions := []actionableRegion{
+func initActionableRegions() []actionableRegion {
+	return []actionableRegion{
 		{leftSkill, d2geom.Rectangle{
 			Left:   leftSkillX,
 			Top:    leftSkillY,
@@ -170,29 +154,36 @@ func NewGameControls(
 			Height: manaGlobeHeight,
 		}},
 	}
-	inventoryRecord := asset.Records.Layout.Inventory[inventoryRecordKey]
+}
 
-	heroStatsPanel := NewHeroStatsPanel(asset, ui, hero.Name(), hero.Class, l, hero.Stats)
-
-	questLog := NewQuestLog(asset, ui, l, audioProvider, hero.Act)
-
-	inventory, err := NewInventory(asset, ui, l, hero.Gold, inventoryRecord)
+// NewGameControls creates a GameControls instance and returns a pointer to it
+func NewGameControls(
+	asset *d2asset.AssetManager,
+	renderer d2interface.Renderer,
+	hero *d2mapentity.Player,
+	mapEngine *d2mapengine.MapEngine,
+	escapeMenu *EscapeMenu,
+	mapRenderer *d2maprenderer.MapRenderer,
+	inputListener inputCallbackListener,
+	term d2interface.Terminal,
+	ui *d2ui.UIManager,
+	keyMap *KeyMap,
+	audioProvider d2interface.AudioProvider,
+	l d2util.LogLevel,
+	isSinglePlayer bool,
+	players map[string]*d2mapentity.Player,
+) (*GameControls, error) {
+	inventoryRecordKey, err := getInventoryRecordKey(hero.Class)
 	if err != nil {
 		return nil, err
 	}
 
-	skilltree := newSkillTree(hero.Skills, hero.Class, hero.Stats, asset, l, ui)
-
-	miniPanel := newMiniPanel(asset, ui, l, isSinglePlayer)
+	inventoryRecord := asset.Records.Layout.Inventory[inventoryRecordKey]
 
 	heroState, err := d2hero.NewHeroStateFactory(asset)
 	if err != nil {
 		return nil, err
 	}
-
-	helpOverlay := NewHelpOverlay(asset, ui, l, keyMap)
-
-	const blackAlpha50percent = 0x0000007f
 
 	gc := &GameControls{
 		asset:          asset,
@@ -200,15 +191,12 @@ func NewGameControls(
 		renderer:       renderer,
 		hero:           hero,
 		heroState:      heroState,
+		audioProvider:  audioProvider,
 		escapeMenu:     escapeMenu,
 		inputListener:  inputListener,
 		mapRenderer:    mapRenderer,
-		inventory:      inventory,
-		skilltree:      skilltree,
-		heroStatsPanel: heroStatsPanel,
-		questLog:       questLog,
-		HelpOverlay:    helpOverlay,
 		keyMap:         keyMap,
+		isSinglePlayer: isSinglePlayer,
 		bottomMenuRect: &d2geom.Rectangle{
 			Left:   menuBottomRectX,
 			Top:    menuBottomRectY,
@@ -227,44 +215,77 @@ func NewGameControls(
 			Width:  menuRightRectW,
 			Height: menuRightRectH,
 		},
-		actionableRegions:      actionableRegions,
+		actionableRegions:      initActionableRegions(),
 		lastLeftBtnActionTime:  0,
 		lastRightBtnActionTime: 0,
-		isSinglePlayer:         isSinglePlayer,
 	}
 
-	if !isSinglePlayer {
-		PartyPanel := NewPartyPanel(asset, ui, hero.Name(), l, hero, hero.Stats, players)
-		gc.PartyPanel = PartyPanel
-	}
-
-	hud := NewHUD(asset, ui, hero, miniPanel, actionableRegions, mapEngine, l, gc, mapRenderer)
-	gc.hud = hud
-
-	hoverLabel := hud.nameLabel
-	hoverLabel.SetBackgroundColor(d2util.Color(blackAlpha50percent))
-
-	gc.heroStatsPanel.SetOnCloseCb(gc.onCloseHeroStatsPanel)
-	gc.questLog.SetOnCloseCb(gc.onCloseQuestLog)
-	gc.inventory.SetOnCloseCb(gc.onCloseInventory)
-	gc.skilltree.SetOnCloseCb(gc.onCloseSkilltree)
-
-	gc.escapeMenu.SetOnCloseCb(gc.hud.miniPanel.restoreDisabled)
-	gc.HelpOverlay.SetOnCloseCb(gc.hud.miniPanel.restoreDisabled)
-
-	err = gc.bindTerminalCommands(term)
-	if err != nil {
+	if err := gc.initUIComponents(inventoryRecord, l, mapEngine, players); err != nil {
 		return nil, err
 	}
 
-	gc.Logger = d2util.NewLogger()
-	gc.Logger.SetLevel(l)
-	gc.Logger.SetPrefix(logPrefix)
+	if err := gc.bindEvents(term, l); err != nil {
+		return nil, err
+	}
 
 	return gc, nil
 }
 
-// GameControls represents the game's controls on the screen
+func (g *GameControls) initUIComponents(
+	inventoryRecord *d2records.InventoryRecord,
+	l d2util.LogLevel,
+	mapEngine *d2mapengine.MapEngine,
+	players map[string]*d2mapentity.Player,
+) error {
+	g.heroStatsPanel = NewHeroStatsPanel(g.asset, g.ui, g.hero.Name(), g.hero.Class, l, g.hero.Stats)
+	g.questLog = NewQuestLog(g.asset, g.ui, l, g.audioProvider, g.hero.Act)
+
+	inventory, err := NewInventory(g.asset, g.ui, l, g.hero.Gold, inventoryRecord)
+	if err != nil {
+		return err
+	}
+
+	g.inventory = inventory
+	g.skilltree = newSkillTree(g.hero.Skills, g.hero.Class, g.hero.Stats, g.asset, l, g.ui)
+
+	miniPanel := newMiniPanel(g.asset, g.ui, l, g.isSinglePlayer)
+
+	g.HelpOverlay = NewHelpOverlay(g.asset, g.ui, l, g.keyMap)
+
+	if !g.isSinglePlayer {
+		g.PartyPanel = NewPartyPanel(g.asset, g.ui, g.hero.Name(), l, g.hero, g.hero.Stats, players)
+	}
+
+	g.hud = NewHUD(g.asset, g.ui, g.hero, miniPanel, g.actionableRegions, mapEngine, l, g, g.mapRenderer)
+
+	return nil
+}
+
+func (g *GameControls) bindEvents(term d2interface.Terminal, l d2util.LogLevel) error {
+	const blackAlpha50percent = 0x0000007f
+
+	hoverLabel := g.hud.nameLabel
+	hoverLabel.SetBackgroundColor(d2util.Color(blackAlpha50percent))
+
+	g.heroStatsPanel.SetOnCloseCb(g.onCloseHeroStatsPanel)
+	g.questLog.SetOnCloseCb(g.onCloseQuestLog)
+	g.inventory.SetOnCloseCb(g.onCloseInventory)
+	g.skilltree.SetOnCloseCb(g.onCloseSkilltree)
+
+	g.escapeMenu.SetOnCloseCb(g.hud.miniPanel.restoreDisabled)
+	g.HelpOverlay.SetOnCloseCb(g.hud.miniPanel.restoreDisabled)
+
+	if err := g.bindTerminalCommands(term); err != nil {
+		return err
+	}
+
+	g.Logger = d2util.NewLogger()
+	g.Logger.SetLevel(l)
+	g.Logger.SetPrefix(logPrefix)
+
+	return nil
+}
+
 type GameControls struct {
 	keyMap                 *KeyMap
 	actionableRegions      []actionableRegion
@@ -273,6 +294,7 @@ type GameControls struct {
 	inputListener          inputCallbackListener
 	hero                   *d2mapentity.Player
 	heroState              *d2hero.HeroStateFactory
+	audioProvider          d2interface.AudioProvider
 	mapRenderer            *d2maprenderer.MapRenderer
 	escapeMenu             *EscapeMenu
 	ui                     *d2ui.UIManager
