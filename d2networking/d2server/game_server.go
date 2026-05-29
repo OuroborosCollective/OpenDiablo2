@@ -522,11 +522,24 @@ func (g *GameServer) OnPacketReceived(client ClientConnection, packet d2netpacke
 
 		g.sendPacketToClients(packet)
 	case d2netpackettype.CastSkill, d2netpackettype.SpawnItem:
+		var payload interface{}
+		var err error
+
+		if packet.PacketType == d2netpackettype.CastSkill {
+			payload, err = d2netpacket.UnmarshalCast(packet.PacketData)
+		} else {
+			payload, err = d2netpacket.UnmarshalSpawnItem(packet.PacketData)
+		}
+
+		if err != nil {
+			return err
+		}
+
 		// Dispatch Axiomatic event for skills/items
 		g.scriptEngine.DispatchEvent(&d2script.IAxiomaticEvent{
 			ID:      fmt.Sprintf("%d-%s", packet.PacketType, client.GetUniqueID()),
 			Type:    fmt.Sprintf("%d", packet.PacketType),
-			Payload: packet.PacketData,
+			Payload: payload,
 			Metadata: map[string]interface{}{
 				"client_id": client.GetUniqueID(),
 			},

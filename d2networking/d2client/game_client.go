@@ -38,7 +38,7 @@ type GameClient struct {
 	clientConnection ServerConnection                            // Abstract local/remote connection
 	connectionType   d2clientconnectiontype.ClientConnectionType // Type of connection (local or remote)
 	asset            *d2asset.AssetManager
-	scriptEngine     *d2script.ScriptEngine
+	ScriptEngine     *d2script.ScriptEngine
 	GameState        *d2hero.HeroState              // local player state
 	MapEngine        *d2mapengine.MapEngine         // Map and entities
 	mapGen           *d2mapgen.MapGenerator         // map generator
@@ -60,7 +60,7 @@ func Create(connectionType d2clientconnectiontype.ClientConnectionType,
 		MapEngine:      d2mapengine.CreateMapEngine(l, asset),
 		Players:        make(map[string]*d2mapentity.Player),
 		connectionType: connectionType,
-		scriptEngine:   scriptEngine,
+		ScriptEngine:   scriptEngine,
 	}
 
 	result.Logger = d2util.NewLogger()
@@ -143,6 +143,10 @@ func (g *GameClient) OnPacketReceived(packet d2netpacket.NetPacket) error {
 		}
 	case d2netpackettype.SpawnItem:
 		if err := g.handleSpawnItemPacket(packet); err != nil {
+			return err
+		}
+	case d2netpackettype.AxiomaticStatus:
+		if err := g.handleAxiomaticStatusPacket(packet); err != nil {
 			return err
 		}
 	case d2netpackettype.Ping:
@@ -231,7 +235,30 @@ func (g *GameClient) handleSpawnItemPacket(packet d2netpacket.NetPacket) error {
 		g.MapEngine.AddEntity(itemEntity)
 	}
 
+	// Dispatch Axiomatic event
+	g.ScriptEngine.DispatchEvent(&d2script.IAxiomaticEvent{
+		ID:      fmt.Sprintf("%d-client", packet.PacketType),
+		Type:    fmt.Sprintf("%d", packet.PacketType),
+		Payload: item,
+	})
+
 	return err
+}
+
+func (g *GameClient) handleAxiomaticStatusPacket(packet d2netpacket.NetPacket) error {
+	status, err := d2netpacket.UnmarshalAxiomaticStatus(packet.PacketData)
+	if err != nil {
+		return err
+	}
+
+	// Dispatch Axiomatic event for WorldEmergence to sync resonance
+	g.ScriptEngine.DispatchEvent(&d2script.IAxiomaticEvent{
+		ID:      "AxiomaticStatus-sync",
+		Type:    "WorldEmergence",
+		Payload: status.Resonance,
+	})
+
+	return nil
 }
 
 func (g *GameClient) handleMovePlayerPacket(packet d2netpacket.NetPacket) error {
@@ -246,6 +273,18 @@ func (g *GameClient) handleMovePlayerPacket(packet d2netpacket.NetPacket) error 
 	path := g.MapEngine.PathFind(start, dest)
 
 	if len(path) > 0 {
+		// Dispatch Axiomatic event
+		g.ScriptEngine.DispatchEvent(&d2script.IAxiomaticEvent{
+			ID:      "MoveEvent-" + movePlayer.PlayerID,
+			Type:    "PlayerMove",
+			Payload: movePlayer,
+			Metadata: map[string]interface{}{
+				"client_id": movePlayer.PlayerID,
+				"x":         movePlayer.DestX,
+				"y":         movePlayer.DestY,
+			},
+		})
+
 		player.SetPath(path, func() {
 			tilePosition := player.Position.Tile()
 			tile := g.MapEngine.TileAt(int(tilePosition.X()), int(tilePosition.Y()))
@@ -298,6 +337,16 @@ func (g *GameClient) handleCastSkillPacket(packet d2netpacket.NetPacket) error {
 			return err
 		}
 	}
+
+	// Dispatch Axiomatic event
+	g.ScriptEngine.DispatchEvent(&d2script.IAxiomaticEvent{
+		ID:      fmt.Sprintf("%d-%s", packet.PacketType, playerCast.SourceEntityID),
+		Type:    fmt.Sprintf("%d", packet.PacketType),
+		Payload: playerCast,
+		Metadata: map[string]interface{}{
+			"client_id": playerCast.SourceEntityID,
+		},
+	})
 
 	player.StartCasting(skillRecord.Anim, func() {
 		if len(missileEntities) > 0 {
