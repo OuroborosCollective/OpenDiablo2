@@ -170,11 +170,22 @@ type KappaSystem struct {
 }
 
 func NewKappaSystem(engine *BaalAalEngine) *KappaSystem {
-	return &KappaSystem{
+	k := &KappaSystem{
 		Positions: make(map[string][]int32),
 		Compiler:  &AREStateCompiler{},
 		engine:    engine,
 	}
+
+	// Auto-subscribe to the AxiomaticEventBus
+	if engine.EventBus != nil {
+		engine.EventBus.Subscribe("KappaSystem", func(event *IAxiomaticEvent) {
+			if event.Type == "PLAYER_MOVE" || event.Type == "PlayerMove" {
+				k.HandleMove(event)
+			}
+		})
+	}
+
+	return k
 }
 
 func (k *KappaSystem) HandleMove(event *IAxiomaticEvent) {
@@ -241,16 +252,14 @@ type BaalAalEngine struct {
 
 func NewBaalAalEngine() *BaalAalEngine {
 	e := &BaalAalEngine{
-		Compiler: &AREStateCompiler{},
-		EventBus: NewAxiomaticEventBus(50000), // Matching Wasd repo size
-		rules:    make(map[string][]func(*IAxiomaticEvent)),
+		Compiler:     &AREStateCompiler{},
+		EventBus:     NewAxiomaticEventBus(50000), // Matching Wasd repo size
+		rules:        make(map[string][]func(*IAxiomaticEvent)),
+		CombatSystem: &CombatSystem{Compiler: &AREStateCompiler{}},
+		ItemSystem:   &ItemSystem{Compiler: &AREStateCompiler{}},
+		WorldSystem:  NewWorldSystem(),
 	}
 	e.KappaSystem = NewKappaSystem(e)
-	e.EventBus.Subscribe("KappaSystem", func(event *IAxiomaticEvent) {
-		if event.Type == "PLAYER_MOVE" || event.Type == "PlayerMove" {
-			e.KappaSystem.HandleMove(event)
-		}
-	})
 
 	e.RegisterRule("PlayerMove", e.KappaSystem.HandleMove)
 	e.RegisterRule("PLAYER_MOVE", e.KappaSystem.HandleMove)

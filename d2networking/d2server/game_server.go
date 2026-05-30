@@ -60,6 +60,7 @@ type GameServer struct {
 	packetManagerChan chan ReceivedPacket
 	heroStateFactory  *d2hero.HeroStateFactory
 	emergentEngine    *d2emergent.ARELogikEngine
+	allowedOrigins    []string
 
 	*d2util.Logger
 }
@@ -197,6 +198,13 @@ func (g *GameServer) Start() error {
 	}()
 
 	return nil
+}
+
+// SetAllowedOrigins sets the allowed origins for WebSocket connections
+func (g *GameServer) SetAllowedOrigins(origins []string) {
+	g.Lock()
+	defer g.Unlock()
+	g.allowedOrigins = origins
 }
 
 // Stop stops the game server
@@ -522,11 +530,25 @@ func (g *GameServer) OnPacketReceived(client ClientConnection, packet d2netpacke
 
 		g.sendPacketToClients(packet)
 	case d2netpackettype.CastSkill, d2netpackettype.SpawnItem:
+		var payload interface{}
+		var err error
+
+		if packet.PacketType == d2netpackettype.CastSkill {
+			payload, err = d2netpacket.UnmarshalCast(packet.PacketData)
+		} else {
+			payload, err = d2netpacket.UnmarshalSpawnItem(packet.PacketData)
+		}
+
+		if err != nil {
+			g.Errorf("Failed to unmarshal axiomatic payload: %v", err)
+			payload = packet.PacketData // Fallback to raw data
+		}
+
 		// Dispatch Axiomatic event for skills/items
 		g.scriptEngine.DispatchEvent(&d2script.IAxiomaticEvent{
 			ID:      fmt.Sprintf("%d-%s", packet.PacketType, client.GetUniqueID()),
 			Type:    fmt.Sprintf("%d", packet.PacketType),
-			Payload: packet.PacketData,
+			Payload: payload,
 			Metadata: map[string]interface{}{
 				"client_id": client.GetUniqueID(),
 			},
