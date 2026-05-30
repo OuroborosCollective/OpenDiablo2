@@ -114,6 +114,8 @@ type Game struct {
 	localPlayer          *d2mapentity.Player
 	lastRegionType       d2enum.RegionIdType
 	ticksSinceLevelCheck float64
+	axiomaticAccumulator float64
+	axiomaticTick        uint64
 	escapeMenu           *d2player.EscapeMenu
 	soundEngine          *d2audio.SoundEngine
 	soundEnv             d2audio.SoundEnvironment
@@ -229,6 +231,15 @@ func (v *Game) Render(screen d2interface.Surface) {
 // nolint:gocyclo // not need to change
 func (v *Game) Advance(elapsed float64) error {
 	v.soundEngine.Advance(elapsed)
+
+	if v.gameClient.ScriptEngine != nil && v.gameClient.ScriptEngine.BaalAal != nil {
+		v.axiomaticAccumulator += elapsed
+		for v.axiomaticAccumulator >= 0.1 {
+			v.gameClient.ScriptEngine.BaalAal.ProcessCycle(v.axiomaticTick)
+			v.axiomaticTick++
+			v.axiomaticAccumulator -= 0.1
+		}
+	}
 
 	if (v.escapeMenu != nil && !v.escapeMenu.IsOpen()) || len(v.gameClient.Players) != 1 {
 		v.gameClient.MapEngine.Advance(elapsed)

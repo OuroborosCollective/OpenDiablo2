@@ -167,7 +167,10 @@ func (g *GameServer) Start() error {
 				// Broadcast Axiomatic status every 10 ticks (1 second)
 				if tick%10 == 0 {
 					resonance, cycle := g.scriptEngine.BaalAal.GetStatus()
-					statusPacket, err := d2netpacket.CreateAxiomaticStatusPacket(resonance, cycle)
+					expansion := g.scriptEngine.BaalAal.WorldSystem.Expansion
+					entropy := g.scriptEngine.BaalAal.WorldSystem.Entropy
+
+					statusPacket, err := d2netpacket.CreateAxiomaticStatusPacket(resonance, cycle, expansion, entropy)
 					if err == nil {
 						g.sendPacketToClients(statusPacket)
 					}
@@ -522,11 +525,28 @@ func (g *GameServer) OnPacketReceived(client ClientConnection, packet d2netpacke
 
 		g.sendPacketToClients(packet)
 	case d2netpackettype.CastSkill, d2netpackettype.SpawnItem:
+		var payload interface{}
+		if packet.PacketType == d2netpackettype.CastSkill {
+			p, err := d2netpacket.UnmarshalCast(packet.PacketData)
+			if err == nil {
+				payload = p
+			}
+		} else {
+			p, err := d2netpacket.UnmarshalSpawnItem(packet.PacketData)
+			if err == nil {
+				payload = p
+			}
+		}
+
+		if payload == nil {
+			payload = packet.PacketData
+		}
+
 		// Dispatch Axiomatic event for skills/items
 		g.scriptEngine.DispatchEvent(&d2script.IAxiomaticEvent{
 			ID:      fmt.Sprintf("%d-%s", packet.PacketType, client.GetUniqueID()),
 			Type:    fmt.Sprintf("%d", packet.PacketType),
-			Payload: packet.PacketData,
+			Payload: payload,
 			Metadata: map[string]interface{}{
 				"client_id": client.GetUniqueID(),
 			},

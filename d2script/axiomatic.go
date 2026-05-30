@@ -46,7 +46,7 @@ type AxiomaticEventBus struct {
 	writePointer     int
 	isFull           bool
 	globalSequenceID uint64
-	resonanceState   float64
+	ResonanceState   float64
 	subscribers      map[string]func(*IAxiomaticEvent)
 }
 
@@ -81,13 +81,13 @@ func (b *AxiomaticEventBus) Publish(event *IAxiomaticEvent) {
 	// Recursive BaalAal logic: The state "eats" its own tail (resonance feedback)
 	// We'll simulate this by incorporating the previous resonance state into the new event
 	resonance := b.calculateResonance(event)
-	b.resonanceState = math.Mod(b.resonanceState+resonance, 2147483647)
+	b.ResonanceState = math.Mod(b.ResonanceState+resonance, 2147483647)
 
 	if event.Metadata == nil {
 		event.Metadata = make(map[string]interface{})
 	}
 	event.Metadata["resonance"] = resonance
-	event.Metadata["baalaal_cycle"] = b.resonanceState // The self-eating cycle
+	event.Metadata["baalaal_cycle"] = b.ResonanceState // The self-eating cycle
 
 	b.ledger[b.writePointer] = event
 	b.writePointer = (b.writePointer + 1) % b.maxLedgerSize
@@ -245,7 +245,12 @@ func NewBaalAalEngine() *BaalAalEngine {
 		EventBus: NewAxiomaticEventBus(50000), // Matching Wasd repo size
 		rules:    make(map[string][]func(*IAxiomaticEvent)),
 	}
+
 	e.KappaSystem = NewKappaSystem(e)
+	e.CombatSystem = &CombatSystem{Compiler: e.Compiler}
+	e.ItemSystem = &ItemSystem{Compiler: e.Compiler}
+	e.WorldSystem = NewWorldSystem()
+
 	e.EventBus.Subscribe("KappaSystem", func(event *IAxiomaticEvent) {
 		if event.Type == "PLAYER_MOVE" || event.Type == "PlayerMove" {
 			e.KappaSystem.HandleMove(event)
@@ -273,17 +278,17 @@ func (e *BaalAalEngine) ProcessCycle(tick uint64) {
 
 	// The boss Baal recursive snake self eating recursive cycle system
 	// Incorporate the resonance state back into itself
-	if e.EventBus.resonanceState == 0 {
-		e.EventBus.resonanceState = 1.0 // Seed if zero
+	if e.EventBus.ResonanceState == 0 {
+		e.EventBus.ResonanceState = 1.0 // Seed if zero
 	}
 
 	// Complex recursive logic: The resonance state grows and wraps,
 	// but is also influenced by the tick and a harmonic sine wave.
 	harmonic := math.Sin(float64(tick)*0.01) * 0.05
-	e.EventBus.resonanceState = math.Mod((e.EventBus.resonanceState+harmonic)*1.0001, 2147483647)
+	e.EventBus.ResonanceState = math.Mod((e.EventBus.ResonanceState+harmonic)*1.0001, 2147483647)
 
-	if e.EventBus.resonanceState < 0 {
-		e.EventBus.resonanceState = 1.0
+	if e.EventBus.ResonanceState < 0 {
+		e.EventBus.ResonanceState = 1.0
 	}
 
 	// Collect new events from ledger under lock
@@ -392,6 +397,6 @@ func (e *BaalAalEngine) GetStatus() (float64, float64) {
 	e.EventBus.RLock()
 	defer e.EventBus.RUnlock()
 
-	resonance := math.Mod(e.EventBus.resonanceState, 1.0)
-	return resonance, e.EventBus.resonanceState
+	resonance := math.Mod(e.EventBus.ResonanceState, 1.0)
+	return resonance, e.EventBus.ResonanceState
 }
