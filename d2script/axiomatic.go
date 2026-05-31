@@ -240,10 +240,14 @@ type BaalAalEngine struct {
 }
 
 func NewBaalAalEngine() *BaalAalEngine {
+	compiler := &AREStateCompiler{}
 	e := &BaalAalEngine{
-		Compiler: &AREStateCompiler{},
-		EventBus: NewAxiomaticEventBus(50000), // Matching Wasd repo size
-		rules:    make(map[string][]func(*IAxiomaticEvent)),
+		Compiler:     compiler,
+		EventBus:     NewAxiomaticEventBus(50000), // Matching Wasd repo size
+		CombatSystem: &CombatSystem{Compiler: compiler},
+		ItemSystem:   &ItemSystem{Compiler: compiler},
+		WorldSystem:  NewWorldSystem(),
+		rules:        make(map[string][]func(*IAxiomaticEvent)),
 	}
 	e.KappaSystem = NewKappaSystem(e)
 	e.EventBus.Subscribe("KappaSystem", func(event *IAxiomaticEvent) {
@@ -394,4 +398,14 @@ func (e *BaalAalEngine) GetStatus() (float64, float64) {
 
 	resonance := math.Mod(e.EventBus.resonanceState, 1.0)
 	return resonance, e.EventBus.resonanceState
+}
+
+// GetWorldStatus returns the current resonance, cycle, expansion and entropy.
+func (e *BaalAalEngine) GetWorldStatus() (float64, float64, float64, float64) {
+	res, cyc := e.GetStatus()
+
+	e.WorldSystem.RLock()
+	defer e.WorldSystem.RUnlock()
+
+	return res, cyc, e.WorldSystem.Expansion, e.WorldSystem.Entropy
 }

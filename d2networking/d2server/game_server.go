@@ -166,8 +166,8 @@ func (g *GameServer) Start() error {
 
 				// Broadcast Axiomatic status every 10 ticks (1 second)
 				if tick%10 == 0 {
-					resonance, cycle := g.scriptEngine.BaalAal.GetStatus()
-					statusPacket, err := d2netpacket.CreateAxiomaticStatusPacket(resonance, cycle)
+					resonance, cycle, expansion, entropy := g.scriptEngine.BaalAal.GetWorldStatus()
+					statusPacket, err := d2netpacket.CreateAxiomaticStatusPacket(resonance, cycle, expansion, entropy)
 					if err == nil {
 						g.sendPacketToClients(statusPacket)
 					}

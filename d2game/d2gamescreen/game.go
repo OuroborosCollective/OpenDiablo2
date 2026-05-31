@@ -85,7 +85,7 @@ func CreateGame(
 		uiManager:     ui,
 		guiManager:    guiManager,
 		keyMap:        keyMap,
-		config:        config,
+		config:        navigator.Config(),
 		logLevel:      l,
 	}
 	game.Logger = d2util.NewLogger()
@@ -128,6 +128,9 @@ type Game struct {
 
 	*d2util.Logger
 	logLevel d2util.LogLevel
+
+	baalaalAccumulator float64
+	baalaalTick        uint64
 }
 
 // OnLoad loads the resources for the Gameplay screen
@@ -229,6 +232,16 @@ func (v *Game) Render(screen d2interface.Surface) {
 // nolint:gocyclo // not need to change
 func (v *Game) Advance(elapsed float64) error {
 	v.soundEngine.Advance(elapsed)
+
+	// Axiomatic BaalAal cycle
+	v.baalaalAccumulator += elapsed
+	if v.baalaalAccumulator >= 0.1 {
+		v.baalaalAccumulator -= 0.1
+		if v.gameClient.ScriptEngine != nil && v.gameClient.ScriptEngine.BaalAal != nil {
+			v.gameClient.ScriptEngine.BaalAal.ProcessCycle(v.baalaalTick)
+			v.baalaalTick++
+		}
+	}
 
 	if (v.escapeMenu != nil && !v.escapeMenu.IsOpen()) || len(v.gameClient.Players) != 1 {
 		v.gameClient.MapEngine.Advance(elapsed)

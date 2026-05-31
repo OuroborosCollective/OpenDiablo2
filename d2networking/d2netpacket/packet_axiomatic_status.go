@@ -10,14 +10,18 @@ import (
 type AxiomaticStatusPacket struct {
 	Resonance float64 `json:"resonance"`
 	Cycle     float64 `json:"cycle"`
+	Expansion float64 `json:"expansion"`
+	Entropy   float64 `json:"entropy"`
 }
 
 // CreateAxiomaticStatusPacket returns a NetPacket which declares an
-// AxiomaticStatusPacket with the given resonance and cycle.
-func CreateAxiomaticStatusPacket(resonance, cycle float64) (NetPacket, error) {
+// AxiomaticStatusPacket with the given resonance, cycle, expansion and entropy.
+func CreateAxiomaticStatusPacket(resonance, cycle, expansion, entropy float64) (NetPacket, error) {
 	status := AxiomaticStatusPacket{
 		Resonance: resonance,
 		Cycle:     cycle,
+		Expansion: expansion,
+		Entropy:   entropy,
 	}
 
 	b, err := json.Marshal(status)

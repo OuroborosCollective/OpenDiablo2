@@ -12,7 +12,6 @@ import (
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2asset"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2config"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2gui"
-	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2config"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2ui"
 )
 
@@ -130,7 +129,6 @@ type EscapeMenu struct {
 	assetManager   *d2asset.AssetManager
 	config         *d2config.Configuration
 	keyMap         *KeyMap
-	config         *d2config.Configuration
 	keyBindingMenu *KeyBindingMenu
 
 	bgmVolume float64
@@ -489,7 +487,6 @@ func (m *EscapeMenu) onHoverElement(id int) {
 	m.rightPent.SetPosition(x, y+spacerWidth)
 }
 
-
 func (m *EscapeMenu) getInitialValueIndex(optID optionID, values []string) int {
 	var val float64
 	switch optID {
@@ -537,20 +534,6 @@ func (m *EscapeMenu) onUpdateValue(optID optionID, value string) {
 
 			m.audioProvider.SetVolumes(bgm, sfx)
 		}
-	}
-}
-
-	switch optID {
-	case optAudioSoundVolume:
-		if val, err := strconv.ParseFloat(value, 64); err == nil {
-			m.config.SfxVolume = val / 10.0
-			m.audioProvider.SetVolumes(m.config.BgmVolume, m.config.SfxVolume)
-		}
-	case optAudioMusicVolume:
-		if val, err := strconv.ParseFloat(value, 64); err == nil {
-			m.config.BgmVolume = val / 10.0
-			m.audioProvider.SetVolumes(m.config.BgmVolume, m.config.SfxVolume)
-		}
 	case optAudio3dSound:
 		if val, err := strconv.ParseFloat(value, 64); err == nil {
 			m.config.ThreeDBias = val / 10.0
@@ -572,6 +555,7 @@ func (m *EscapeMenu) onUpdateValue(optID optionID, value string) {
 		m.Errorf("failed to save config: %v", err)
 	}
 }
+
 func (m *EscapeMenu) setLayout(id layoutID) {
 	layout := m.layouts[id]
 
