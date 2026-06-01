@@ -11,7 +11,26 @@ import (
 
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
-		return true // Allow all origins for the boilerplate
+		origin := r.Header.Get("Origin")
+		if origin == "" {
+			return true
+		}
+
+		// In production, we should validate the origin against a whitelist.
+		// For development and local testing, we allow connections if the host matches.
+		host := r.Host
+		if i := strings.Index(host, ":"); i != -1 {
+			host = host[:i]
+		}
+
+		if i := strings.Index(origin, "://"); i != -1 {
+			origin = origin[i+3:]
+		}
+		if i := strings.Index(origin, ":"); i != -1 {
+			origin = origin[:i]
+		}
+
+		return origin == host || origin == "localhost" || origin == "127.0.0.1"
 	},
 }
 

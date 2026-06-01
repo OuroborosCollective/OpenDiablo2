@@ -72,7 +72,7 @@ func StringToInt8(text string) int8 {
 		panic(err)
 	}
 
-	if result < -128 || result > 122 {
+	if result < -128 || result > 127 {
 		panic(fmt.Sprintf("value %d out of range of a signed byte", result))
 	}
 
@@ -107,7 +107,6 @@ func Utf16BytesToString(b []byte) (string, error) {
 func SplitIntoLinesWithMaxWidth(fullSentence string, maxChars int) []string {
 	lines := make([]string, 0)
 	line := ""
-	totalLength := 0
 	words := strings.Split(fullSentence, " ")
 
 	if len(words[0]) > maxChars {
@@ -116,17 +115,15 @@ func SplitIntoLinesWithMaxWidth(fullSentence string, maxChars int) []string {
 	}
 
 	for _, word := range words {
-		totalLength += 1 + len(word)
-		if totalLength > maxChars {
-			totalLength = len(word)
-
+		if len(line)+1+len(word) > maxChars && len(line) > 0 {
 			lines = append(lines, line)
-			line = ""
+			line = word
 		} else {
-			line += " "
+			if len(line) > 0 {
+				line += " "
+			}
+			line += word
 		}
-
-		line += word
 	}
 
 	if len(line) > 0 {
@@ -137,10 +134,11 @@ func SplitIntoLinesWithMaxWidth(fullSentence string, maxChars int) []string {
 }
 
 func splitCjkIntoChunks(str string, chars int) []string {
-	chunks := make([]string, chars/len(str))
+	chunks := make([]string, 0)
 	i, count := 0, 0
 
 	for j, ch := range str {
+		runeLen := utf8.RuneLen(ch)
 		if ch < unicode.MaxLatin1 {
 			count++
 		} else {
@@ -149,10 +147,22 @@ func splitCjkIntoChunks(str string, chars int) []string {
 		}
 
 		if count >= chars {
-			chunks = append(chunks, str[i:j])
-			i, count = j, 0
+			// If we exactly hit the limit, include this character
+			if count == chars {
+				chunks = append(chunks, str[i:j+runeLen])
+				i = j + runeLen
+			} else {
+				// We exceeded the limit, so don't include this character in the current chunk
+				chunks = append(chunks, str[i:j])
+				i = j
+			}
+			count = 0
 		}
 	}
 
-	return append(chunks, str[i:])
+	if i < len(str) {
+		chunks = append(chunks, str[i:])
+	}
+
+	return chunks
 }

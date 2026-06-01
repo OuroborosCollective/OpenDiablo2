@@ -241,9 +241,12 @@ type BaalAalEngine struct {
 
 func NewBaalAalEngine() *BaalAalEngine {
 	e := &BaalAalEngine{
-		Compiler: &AREStateCompiler{},
-		EventBus: NewAxiomaticEventBus(50000), // Matching Wasd repo size
-		rules:    make(map[string][]func(*IAxiomaticEvent)),
+		Compiler:     &AREStateCompiler{},
+		EventBus:     NewAxiomaticEventBus(50000), // Matching Wasd repo size
+		rules:        make(map[string][]func(*IAxiomaticEvent)),
+		CombatSystem: &CombatSystem{},
+		ItemSystem:   &ItemSystem{},
+		WorldSystem:  NewWorldSystem(),
 	}
 	e.KappaSystem = NewKappaSystem(e)
 	e.EventBus.Subscribe("KappaSystem", func(event *IAxiomaticEvent) {

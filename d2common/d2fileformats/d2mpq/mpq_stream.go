@@ -358,6 +358,18 @@ func decompressByMask(mask byte, data []byte, expectedLength uint32) ([]byte, er
 			return nil, err
 		}
 		return d2compression.WavDecompress(huff, 2)
+	case 0x48: // PKLib + Wav Mono
+		pk, err := pkDecompress(data)
+		if err != nil {
+			return nil, err
+		}
+		return d2compression.WavDecompress(pk, 1)
+	case 0x88: // PKLib + Wav Stereo
+		pk, err := pkDecompress(data)
+		if err != nil {
+			return nil, err
+		}
+		return d2compression.WavDecompress(pk, 2)
 	}
 
 	// Single algorithms
@@ -380,10 +392,6 @@ func decompressByMask(mask byte, data []byte, expectedLength uint32) ([]byte, er
 		return nil, errors.New("sparse decompression + deflate decompression (0x22) not supported")
 	case 0x30:
 		return nil, errors.New("sparse decompression + bzip2 decompression (0x30) not supported")
-	case 0x48:
-		return []byte{}, errors.New("pk + mpqwav decompression (0x48) not supported")
-	case 0x88:
-		return []byte{}, errors.New("pk + wav decompression (0x88) not supported")
 	default:
 		return []byte{}, fmt.Errorf("decompression not supported for mask %X", mask)
 	}
