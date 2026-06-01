@@ -166,8 +166,8 @@ func (g *GameServer) Start() error {
 
 				// Broadcast Axiomatic status every 10 ticks (1 second)
 				if tick%10 == 0 {
-					resonance, cycle := g.scriptEngine.BaalAal.GetStatus()
-					statusPacket, err := d2netpacket.CreateAxiomaticStatusPacket(resonance, cycle)
+					resonance, cycle, expansion, entropy := g.scriptEngine.BaalAal.GetWorldStatus()
+					statusPacket, err := d2netpacket.CreateAxiomaticStatusPacket(resonance, cycle, expansion, entropy)
 					if err == nil {
 						g.sendPacketToClients(statusPacket)
 					}
@@ -523,10 +523,13 @@ func (g *GameServer) OnPacketReceived(client ClientConnection, packet d2netpacke
 		g.sendPacketToClients(packet)
 	case d2netpackettype.CastSkill, d2netpackettype.SpawnItem:
 		// Dispatch Axiomatic event for skills/items
+		var payload interface{}
+		_ = json.Unmarshal(packet.PacketData, &payload)
+
 		g.scriptEngine.DispatchEvent(&d2script.IAxiomaticEvent{
 			ID:      fmt.Sprintf("%d-%s", packet.PacketType, client.GetUniqueID()),
 			Type:    fmt.Sprintf("%d", packet.PacketType),
-			Payload: packet.PacketData,
+			Payload: payload,
 			Metadata: map[string]interface{}{
 				"client_id": client.GetUniqueID(),
 			},

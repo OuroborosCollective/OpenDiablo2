@@ -36,9 +36,9 @@ func TestAxiomaticEventBus_Publish(t *testing.T) {
 
 func TestBaalAalEngine_ProcessCycle(t *testing.T) {
 	engine := NewBaalAalEngine()
-	initialResonance := engine.EventBus.resonanceState
+	initialResonance := engine.EventBus.ResonanceState
 	engine.ProcessCycle(1)
-	if engine.EventBus.resonanceState == initialResonance {
+	if engine.EventBus.ResonanceState == initialResonance {
 		t.Error("expected resonance state to change after cycle")
 	}
 }

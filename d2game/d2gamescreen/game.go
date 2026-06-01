@@ -127,7 +127,9 @@ type Game struct {
 	terminal      d2interface.Terminal
 
 	*d2util.Logger
-	logLevel d2util.LogLevel
+	logLevel             d2util.LogLevel
+	baalaalAccumulator   float64
+	baalaalTick          uint64
 }
 
 // OnLoad loads the resources for the Gameplay screen
@@ -229,6 +231,15 @@ func (v *Game) Render(screen d2interface.Surface) {
 // nolint:gocyclo // not need to change
 func (v *Game) Advance(elapsed float64) error {
 	v.soundEngine.Advance(elapsed)
+
+	if v.gameClient != nil && v.gameClient.scriptEngine != nil && v.gameClient.scriptEngine.BaalAal != nil {
+		v.baalaalAccumulator += elapsed
+		for v.baalaalAccumulator >= 0.1 {
+			v.gameClient.scriptEngine.BaalAal.ProcessCycle(v.baalaalTick)
+			v.baalaalTick++
+			v.baalaalAccumulator -= 0.1
+		}
+	}
 
 	if (v.escapeMenu != nil && !v.escapeMenu.IsOpen()) || len(v.gameClient.Players) != 1 {
 		v.gameClient.MapEngine.Advance(elapsed)
