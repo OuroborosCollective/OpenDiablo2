@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"strings"
 	"sync"
 	"time"
-	"strings"
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2enum"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2util"
@@ -56,6 +56,7 @@ type GameServer struct {
 	mapEngines        []*d2mapengine.MapEngine
 	scriptEngine      *d2script.ScriptEngine
 	seed              int64
+	allowedOrigins    []string
 	maxConnections    int
 	packetManagerChan chan ReceivedPacket
 	heroStateFactory  *d2hero.HeroStateFactory
@@ -643,4 +644,11 @@ func getTownRegionFromAct(act int) d2enum.RegionIdType {
 	default:
 		return d2enum.RegionAct1Town
 	}
+}
+
+// SetAllowedOrigins sets the list of allowed origins for WebSocket connections
+func (g *GameServer) SetAllowedOrigins(origins []string) {
+	g.Lock()
+	defer g.Unlock()
+	g.allowedOrigins = origins
 }

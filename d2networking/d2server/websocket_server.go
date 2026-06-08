@@ -1,21 +1,56 @@
 package d2server
 
 import (
+	"net"
 	"net/http"
+	"net/url"
+	"strings"
 
-	"github.com/gorilla/websocket"
 	"github.com/OpenDiablo2/OpenDiablo2/d2networking/d2netpacket"
 	"github.com/OpenDiablo2/OpenDiablo2/d2networking/d2netpacket/d2netpackettype"
 	"github.com/OpenDiablo2/OpenDiablo2/d2networking/d2server/d2wsclientconnection"
+	"github.com/gorilla/websocket"
 )
 
-var upgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool {
-		return true // Allow all origins for the boilerplate
-	},
+func (g *GameServer) checkOrigin(r *http.Request) bool {
+	origin := r.Header.Get("Origin")
+	if origin == "" {
+		return true // Allow non-browser clients
+	}
+
+	u, err := url.Parse(origin)
+	if err != nil {
+		return false
+	}
+
+	// 1. Check against Host header
+	host := r.Host
+	if h, _, err := net.SplitHostPort(host); err == nil {
+		host = h
+	}
+
+	if strings.EqualFold(u.Hostname(), host) {
+		return true
+	}
+
+	// 2. Check against allowedOrigins list
+	g.RLock()
+	defer g.RUnlock()
+
+	for _, allowed := range g.allowedOrigins {
+		if strings.EqualFold(u.Hostname(), allowed) || strings.EqualFold(origin, allowed) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (g *GameServer) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
+	upgrader := websocket.Upgrader{
+		CheckOrigin: g.checkOrigin,
+	}
+
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		g.Errorf("failed to upgrade to websocket: %v", err)
