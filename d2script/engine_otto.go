@@ -59,14 +59,20 @@ func (s *ScriptEngine) Eval(script string) (val *otto.Value, err error) {
 	interrupt := make(chan func(), 1)
 	vm.Interrupt = interrupt
 
+	done := make(chan struct{})
 	go func() {
-		time.Sleep(defaultEvalTimeout)
-		interrupt <- func() {
-			panic(ErrEvalTimeout)
+		select {
+		case <-time.After(defaultEvalTimeout):
+			interrupt <- func() {
+				panic(ErrEvalTimeout)
+			}
+		case <-done:
+			// Normal completion, do nothing
 		}
 	}()
 
 	defer func() {
+		close(done)
 		if caught := recover(); caught != nil {
 			if caught == ErrEvalTimeout {
 				err = ErrEvalTimeout

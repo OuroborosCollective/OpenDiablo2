@@ -46,7 +46,7 @@ func CreateStream(mpq *MPQ, block *Block, fileName string) (*Stream, error) {
 		return nil, errors.New("patching is not supported")
 	}
 
-	if (s.Block.HasFlag(FileCompress) || s.Block.HasFlag(FileImplode)) && !s.Block.HasFlag(FileSingleUnit) {
+	if (s.Block.HasFlag(FileCompress) || s.Block.HasFlag(FileImplode) || s.Block.HasFlag(FileEncrypted)) && !s.Block.HasFlag(FileSingleUnit) {
 		if err := s.loadBlockOffsets(); err != nil {
 			return nil, err
 		}

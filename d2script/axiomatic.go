@@ -249,6 +249,10 @@ func NewBaalAalEngine() *BaalAalEngine {
 		rules:        make(map[string][]func(*IAxiomaticEvent)),
 	}
 	e.KappaSystem = NewKappaSystem(e)
+	e.CombatSystem = &CombatSystem{Compiler: e.Compiler}
+	e.ItemSystem = &ItemSystem{Compiler: e.Compiler}
+	e.WorldSystem = NewWorldSystem()
+
 	e.EventBus.Subscribe("KappaSystem", func(event *IAxiomaticEvent) {
 		if event.Type == "PLAYER_MOVE" || event.Type == "PlayerMove" {
 			e.KappaSystem.HandleMove(event)

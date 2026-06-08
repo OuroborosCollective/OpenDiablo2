@@ -596,27 +596,32 @@ func (g *GameServer) getAssetMetadataList() []d2netpacket.AssetMetadata {
 
 		// List files from within the source to provide detailed metadata
 		files, err := source.Listfile()
-		if err == nil {
-			for _, f := range files {
-				ext := strings.ToLower(filepath.Ext(f))
-				fType := "data"
-				switch ext {
-				case ".dc6", ".dcc", ".ds1", ".dt1":
-					fType = "image"
-				case ".wav":
-					fType = "audio"
-				case ".json", ".tbl", ".txt":
-					fType = "json"
-				}
+		if err != nil {
+			g.Errorf("GameServer: failed to list files for source %s: %v", path, err)
+			continue
+		}
 
-				assets = append(assets, d2netpacket.AssetMetadata{
-					ID:   f,
-					Name: filepath.Base(f),
-					Type: fType,
-					Size: "N/A",
-					Path: f,
-				})
+		for _, f := range files {
+			ext := strings.ToLower(filepath.Ext(f))
+			fType := "data"
+			switch ext {
+			case ".dc6", ".dcc", ".ds1", ".dt1":
+				fType = "image"
+			case ".wav":
+				fType = "audio"
+			case ".json", ".tbl", ".txt":
+				fType = "json"
 			}
+
+			// For internal files, we can't easily get the individual size without reading them,
+			// so we use the source file's name/path as reference.
+			assets = append(assets, d2netpacket.AssetMetadata{
+				ID:   f,
+				Name: filepath.Base(f),
+				Type: fType,
+				Size: "Internal",
+				Path: path + "/" + f,
+			})
 		}
 	}
 
