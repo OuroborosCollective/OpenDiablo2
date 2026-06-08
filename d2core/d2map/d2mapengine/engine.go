@@ -30,6 +30,7 @@ type MapEngine struct {
 	tiles         []MapTile
 	size          d2geom.Size               // Size of the map, in tiles
 	levelType     d2records.LevelTypeRecord // Level type of this map
+	dt1TileLookup    map[uint64][]int          // DT1 tile lookup map (indices into dt1TileData)
 	dt1TileData   []d2dt1.Tile              // DT1 tile data
 	startSubTileX int                       // Starting X position
 	startSubTileY int                       // Starting Y position
@@ -53,6 +54,7 @@ func CreateMapEngine(l d2util.LogLevel, asset *d2asset.AssetManager) *MapEngine 
 	engine := &MapEngine{
 		asset:            asset,
 		MapEntityFactory: entity,
+		dt1TileLookup:    make(map[uint64][]int),
 		StampFactory:     stamp,
 		// This will be set to true when we are using a remote client connection, and then set to false after we process the GenerateMapPacket
 		IsLoading: false,
@@ -74,6 +76,7 @@ func (m *MapEngine) GetStartingPosition() (x, y int) {
 func (m *MapEngine) ResetMap(levelType d2enum.RegionIdType, width, height int) {
 	m.entities = make(map[string]d2interface.MapEntity)
 	m.levelType = *m.asset.Records.Level.Types[levelType]
+	m.dt1TileLookup = make(map[uint64][]int)
 	m.size = d2geom.Size{Width: width, Height: height}
 	m.tiles = make([]MapTile, width*height)
 	m.dt1TileData = make([]d2dt1.Tile, 0)
@@ -99,9 +102,17 @@ func (m *MapEngine) addDT1(fileName string) {
 	dt1, err := m.asset.LoadDT1(fileName)
 	if err != nil {
 		m.Error(err.Error())
+		return
 	}
 
+	startIdx := len(m.dt1TileData)
 	m.dt1TileData = append(m.dt1TileData, dt1.Tiles...)
+
+	for i := range dt1.Tiles {
+		tile := dt1.Tiles[i]
+		key := uint64(tile.Style)<<32 | uint64(tile.Sequence)<<16 | uint64(tile.Type)
+		m.dt1TileLookup[key] = append(m.dt1TileLookup[key], startIdx+i)
+	}
 	m.dt1Files = append(m.dt1Files, fileName)
 }
 
@@ -244,20 +255,17 @@ func (m *MapEngine) RemoveEntity(entity d2interface.MapEntity) {
 // GetTiles returns a slice of all tiles matching the given style,
 // sequence and tileType.
 func (m *MapEngine) GetTiles(style, sequence int, tileType d2enum.TileType) []d2dt1.Tile {
-	tiles := make([]d2dt1.Tile, 0)
+	key := uint64(style)<<32 | uint64(sequence)<<16 | uint64(tileType)
+	indices, ok := m.dt1TileLookup[key]
 
-	for idx := range m.dt1TileData {
-		if m.dt1TileData[idx].Style != int32(style) || m.dt1TileData[idx].Sequence != int32(sequence) ||
-			m.dt1TileData[idx].Type != int32(tileType) {
-			continue
-		}
-
-		tiles = append(tiles, m.dt1TileData[idx])
-	}
-
-	if len(tiles) == 0 {
+	if !ok || len(indices) == 0 {
 		m.Warningf("Unknown tile ID [%d %d %d]", style, sequence, tileType)
 		return nil
+	}
+
+	tiles := make([]d2dt1.Tile, len(indices))
+	for i, idx := range indices {
+		tiles[i] = m.dt1TileData[idx]
 	}
 
 	return tiles
@@ -326,9 +334,14 @@ func (m *MapEngine) GenerateMap(regionType d2enum.RegionIdType, levelPreset, fil
 
 // GetTileData returns the tile with the given style, sequence, tileType and index.
 func (m *MapEngine) GetTileData(style, sequence int, tileType d2enum.TileType, index byte) *d2dt1.Tile {
-	for idx := range m.dt1TileData {
-		if m.dt1TileData[idx].Style == int32(style) && m.dt1TileData[idx].Sequence == int32(sequence) &&
-			m.dt1TileData[idx].Type == int32(tileType) && m.dt1TileData[idx].RarityFrameIndex == int32(index) {
+	key := uint64(style)<<32 | uint64(sequence)<<16 | uint64(tileType)
+	indices, ok := m.dt1TileLookup[key]
+	if !ok {
+		return nil
+	}
+
+	for _, idx := range indices {
+		if m.dt1TileData[idx].RarityFrameIndex == int32(index) {
 			return &m.dt1TileData[idx]
 		}
 	}
