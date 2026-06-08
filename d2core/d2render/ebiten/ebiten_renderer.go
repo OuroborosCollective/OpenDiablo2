@@ -3,6 +3,7 @@ package ebiten
 import (
 	"errors"
 	"image"
+	"image/color"
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2util"
 
@@ -23,7 +24,30 @@ const (
 	defaultSkewY      = 0.0
 	defaultScaleX     = 1.0
 	defaultScaleY     = 1.0
+	defaultGamma      = 1.0
+	defaultContrast   = 1.0
 )
+
+const gammaShaderSource = `
+package main
+
+var Gamma float32
+var Contrast float32
+
+func Fragment(position vec4, texCoord vec2, color vec4) vec4 {
+	clr := imageSrc0At(texCoord)
+	if clr.a == 0.0 {
+		return clr
+	}
+
+	rgb := clr.rgb
+	rgb = (rgb - 0.5) * Contrast + 0.5
+	rgb = clamp(rgb, 0.0, 1.0)
+	rgb = pow(rgb, vec3(1.0 / Gamma))
+
+	return vec4(rgb, clr.a)
+}
+`
 
 type renderCallback = func(surface d2interface.Surface) error
 
@@ -38,6 +62,11 @@ type Renderer struct {
 	renderCallback
 	*d2util.GlyphPrinter
 	lastRenderError error
+	gamma           float64
+	contrast        float64
+	offscreen       *ebiten.Image
+	shader          *ebiten.Shader
+	shaderFailed    bool
 }
 
 // Update calls the game's logical update function (the `Advance` method)
@@ -60,7 +89,55 @@ func (r *Renderer) Draw(screen *ebiten.Image) {
 		return
 	}
 
-	r.lastRenderError = r.renderCallback(createEbitenSurface(r, screen))
+	// If gamma and contrast are default, and we don't have a shader, just draw normally
+	if r.gamma == defaultGamma && r.contrast == defaultContrast {
+		r.lastRenderError = r.renderCallback(createEbitenSurface(r, screen))
+		return
+	}
+
+	if r.shaderFailed {
+		r.lastRenderError = r.renderCallback(createEbitenSurface(r, screen))
+		return
+	}
+
+	// Setup offscreen buffer if needed
+	w, h := screen.Size()
+	if r.offscreen == nil {
+		r.offscreen = ebiten.NewImage(w, h)
+	} else {
+		ow, oh := r.offscreen.Size()
+		if ow != w || oh != h {
+			r.offscreen.Dispose()
+			r.offscreen = ebiten.NewImage(w, h)
+		}
+	}
+
+	r.offscreen.Clear()
+	r.lastRenderError = r.renderCallback(createEbitenSurface(r, r.offscreen))
+	if r.lastRenderError != nil {
+		return
+	}
+
+	// Compile shader if needed
+	if r.shader == nil {
+		var err error
+		r.shader, err = ebiten.NewShader([]byte(gammaShaderSource))
+		if err != nil {
+			r.shaderFailed = true
+			// Fallback to normal draw for this frame
+			screen.DrawImage(r.offscreen, nil)
+			return
+		}
+	}
+
+	// Draw offscreen to screen with shader
+	op := &ebiten.DrawRectShaderOptions{}
+	op.Images[0] = r.offscreen
+	op.Uniforms = map[string]interface{}{
+		"Gamma":    float32(r.gamma),
+		"Contrast": float32(r.contrast),
+	}
+	screen.DrawRectShader(w, h, r.shader, op)
 }
 
 // Layout returns the renderer screen width and height
@@ -72,6 +149,8 @@ func (r *Renderer) Layout(_, _ int) (width, height int) {
 func CreateRenderer(cfg *d2config.Configuration) (*Renderer, error) {
 	result := &Renderer{
 		GlyphPrinter: d2util.NewDebugPrinter(),
+		gamma:        defaultGamma,
+		contrast:     defaultContrast,
 	}
 
 	if cfg != nil {
@@ -82,6 +161,13 @@ func CreateRenderer(cfg *d2config.Configuration) (*Renderer, error) {
 		ebiten.SetRunnableOnUnfocused(config.RunInBackground)
 		ebiten.SetVsyncEnabled(config.VsyncEnabled)
 		ebiten.SetMaxTPS(config.TicksPerSecond)
+
+		if config.Gamma > 0 {
+			result.gamma = config.Gamma
+		}
+		if config.Contrast > 0 {
+			result.contrast = config.Contrast
+		}
 	}
 
 	return result, nil
@@ -184,10 +270,14 @@ func (r *Renderer) ShowPanicScreen(message string) {
 
 // SetGamma sets the gamma for the renderer
 func (r *Renderer) SetGamma(gamma float64) {
-	// TODO: implement gamma
+	if gamma > 0 {
+		r.gamma = gamma
+	}
 }
 
 // SetContrast sets the contrast for the renderer
 func (r *Renderer) SetContrast(contrast float64) {
-	// TODO: implement contrast
+	if contrast > 0 {
+		r.contrast = contrast
+	}
 }
