@@ -12,7 +12,6 @@ import (
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2asset"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2config"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2gui"
-	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2config"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2ui"
 )
 
@@ -67,7 +66,6 @@ const (
 )
 
 const (
-	singleFrame = time.Millisecond * 16
 )
 
 // NewEscapeMenu creates a new escape menu
@@ -130,7 +128,6 @@ type EscapeMenu struct {
 	assetManager   *d2asset.AssetManager
 	config         *d2config.Configuration
 	keyMap         *KeyMap
-	config         *d2config.Configuration
 	keyBindingMenu *KeyBindingMenu
 
 	bgmVolume float64
@@ -149,6 +146,7 @@ type layout struct {
 	currentEl          int
 	rendered           bool
 	isRaw              bool
+	pendingHoverUpdate bool
 }
 
 type actionableElement interface {
@@ -595,13 +593,7 @@ func (m *EscapeMenu) setLayout(id layoutID) {
 		m.layouts[id].rendered = true
 		m.leftPent.SetVisible(false)
 		m.rightPent.SetVisible(false)
-
-		go func() {
-			time.Sleep(singleFrame)
-			m.onHoverElement(m.layouts[id].currentEl)
-			m.leftPent.SetVisible(true)
-			m.rightPent.SetVisible(true)
-		}()
+		m.layouts[id].pendingHoverUpdate = true
 	} else {
 		m.onHoverElement(m.layouts[id].currentEl)
 	}
@@ -648,6 +640,12 @@ func (m *EscapeMenu) IsOpen() bool {
 
 // Advance computes the state of the elements of the menu overtime
 func (m *EscapeMenu) Advance(elapsed float64) error {
+	if m.isOpen && m.layouts[m.currentLayout] != nil && m.layouts[m.currentLayout].pendingHoverUpdate {
+		m.onHoverElement(m.layouts[m.currentLayout].currentEl)
+		m.leftPent.SetVisible(true)
+		m.rightPent.SetVisible(true)
+		m.layouts[m.currentLayout].pendingHoverUpdate = false
+	}
 	if m.keyBindingMenu != nil {
 		if err := m.keyBindingMenu.Advance(elapsed); err != nil {
 			return err
