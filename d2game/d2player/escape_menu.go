@@ -487,7 +487,6 @@ func (m *EscapeMenu) onHoverElement(id int) {
 	m.rightPent.SetPosition(x, y+spacerWidth)
 }
 
-
 func (m *EscapeMenu) getInitialValueIndex(optID optionID, values []string) int {
 	var val float64
 	switch optID {
@@ -538,38 +537,6 @@ func (m *EscapeMenu) onUpdateValue(optID optionID, value string) {
 	}
 }
 
-	switch optID {
-	case optAudioSoundVolume:
-		if val, err := strconv.ParseFloat(value, 64); err == nil {
-			m.config.SfxVolume = val / 10.0
-			m.audioProvider.SetVolumes(m.config.BgmVolume, m.config.SfxVolume)
-		}
-	case optAudioMusicVolume:
-		if val, err := strconv.ParseFloat(value, 64); err == nil {
-			m.config.BgmVolume = val / 10.0
-			m.audioProvider.SetVolumes(m.config.BgmVolume, m.config.SfxVolume)
-		}
-	case optAudio3dSound:
-		if val, err := strconv.ParseFloat(value, 64); err == nil {
-			m.config.ThreeDBias = val / 10.0
-			m.audioProvider.Set3DBias(m.config.ThreeDBias)
-		}
-	case optVideoGamma:
-		if val, err := strconv.ParseFloat(value, 64); err == nil {
-			m.config.Gamma = val / 10.0
-			m.renderer.SetGamma(m.config.Gamma)
-		}
-	case optVideoContrast:
-		if val, err := strconv.ParseFloat(value, 64); err == nil {
-			m.config.Contrast = val / 10.0
-			m.renderer.SetContrast(m.config.Contrast)
-		}
-	}
-
-	if err := m.config.Save(); err != nil {
-		m.Errorf("failed to save config: %v", err)
-	}
-}
 func (m *EscapeMenu) setLayout(id layoutID) {
 	layout := m.layouts[id]
 
