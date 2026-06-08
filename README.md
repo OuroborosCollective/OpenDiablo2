@@ -31,7 +31,32 @@ This project has transitioned from arbitrary JavaScript evaluation to the **Axio
 - **Recursive Logic:** Implementing the BaalAal "self-eating snake" (Ouroboros) cycle system for resonance stability.
 - **Security:** Arbitrary code execution via `js` command is disabled in release builds and replaced by restricted axiomatic operations (`ax-*`).
 
-----
+---
+
+## 📋 Projekt-Status (Juni 2026)
+
+### ✅ Erfolgreich integrierte Änderungen:
+
+**Sicherheit:**
+- 🔒 WebSocket Origin Validierung implementiert
+- 🔒 JS Execution Timeouts konfiguriert  
+- 🔒 Lokaler WebSocket-Server als Standard
+
+**Performance:**
+- ⚡ Tile Lookup und Caching optimiert
+- ⚡ Escape Menu UI State Management verbessert
+- ⚡ Ebiten Renderer Verbesserungen
+
+**Tests:**
+- 🧪 Unit Tests für stringutils Utility Funktionen
+- 🧪 Tests für Ext2SourceType und Ext2AssetType
+
+**Code-Qualität:**
+- 🧹 NewGameControls Refactoring
+- 🧹 Gamma und Contrast Configuration in Ebiten Renderer
+- 🧹 3D Audio Bias Implementation
+
+---
 
 The engine is written in Go and is cross platform.
 
