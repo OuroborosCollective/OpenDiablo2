@@ -19,7 +19,7 @@ type ARELogikEngine struct {
 	Feedback        float64
 }
 
-// Markgraf constants for ARE-Logik
+// Markgraf constants for ARE-Logik (re-exported for backwards compatibility)
 const (
 	MarkgrafHarmonicFrequency = 0.017
 	MarkgrafExpansionCoeff    = 1.0000001
