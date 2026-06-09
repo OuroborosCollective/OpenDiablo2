@@ -1,53 +1,98 @@
-# Install OpenDiablo2
+# Ouroboros Collective - Installationsanleitung
 
-We currently provide binaries only for [Patreon supporters](https://www.patreon.com/bePatron?u=37261055) to [download and auto-update](https://www.patreon.com/posts/thanks-for-38407582).
-If you are not one of those, you need to follow the developer documentation for building the project using Go.
+**ARE-Diablo2-BaalAal**
 
-Once you have an executable/binary of OpenDiablo2 (either provided via Patreon or building your own), then just launch it.
+---
 
-### Error? It's expected!
+## 📋 Voraussetzungen
 
-In case there is an error, it's most likely related to MPQ files.
-You need to modify `config.json`.
+- Go 1.21+
+- Node.js 18+
+- MPQ-Dateien von Diablo 2
 
-Run the binary once; it should let your know where the location of this file is.
-For example:
+---
 
-![Error is expected](./expectederror.png)
+## 🔧 Installation
 
-In this specific case (MacOS) the file is located at: `~/Library/Application\ Support/OpenDiablo2/config.json`
-
-Make sure the file looks like this:
-
-```json
-{
-  "MpqLoadOrder": [
-    "patch_d2.mpq",
-    "d2exp.mpq",
-    "d2xmusic.mpq",
-    "d2xtalk.mpq",
-    "d2xvideo.mpq",
-    "d2data.mpq",
-    "d2char.mpq",
-    "d2music.mpq",
-    "d2sfx.mpq",
-    "d2video.mpq",
-    "d2speech.mpq"
-  ],
-  "MpqPath": "/Applications/Diablo II/",
-  "TicksPerSecond": -1,
-  "FpsCap": 0,
-  "SfxVolume": 1,
-  "BgmVolume": 0.3,
-  "FullScreen": false,
-  "RunInBackground": true,
-  "VsyncEnabled": true,
-  "Backend": "Ebiten"
-}
+### 1. Repository klonen
+```bash
+git clone https://github.com/OuroborosCollective/OpenDiablo2.git
+cd OpenDiablo2
 ```
 
-Pay attention to the `MpqPath` directory (you can also change this to whatever location your like).
-Now copy-and-paste the MPQ files from you Windows PC into that directory.
-Make sure the filenames are matching the ones from `config.json`,
+### 2. Go Dependencies installieren
+```bash
+go mod download
+```
 
-Now, launch OpenDiablo2 again and this time it should work!
+### 3. Web-Client installieren
+```bash
+cd web-client
+npm install
+cd ..
+```
+
+---
+
+## 🎮 Spiel starten
+
+### Backend (Go Server)
+```bash
+go run .
+# Server startet auf http://localhost:8080
+```
+
+### Web-Client (separate Terminal)
+```bash
+cd web-client
+npm run dev
+# Client startet auf http://localhost:3000
+```
+
+---
+
+## 📱 Mobile Installation
+
+### Web App (PWA)
+1. Öffne `http://localhost:3000` im Mobile Browser
+2. Tippe auf "Zum Home-Bildschirm hinzufügen"
+3. Die App erscheint auf dem Home-Screen
+
+### Native Apps (geplant)
+- iOS App Store (Q4 2026)
+- Google Play Store (Q4 2026)
+
+---
+
+## 🐛 Fehlerbehebung
+
+### Go Modulfehler
+```bash
+go clean -cache
+go mod tidy
+```
+
+### Node Module Fehler
+```bash
+cd web-client
+rm -rf node_modules package-lock.json
+npm install
+```
+
+---
+
+## 📁 MPQ-Dateien
+
+Das Spiel benötigt die originalen Diablo 2 MPQ-Dateien:
+- `d2exp.mpq`
+- `d2music.mpq`
+- `d2sfx.mpq`
+- `d2data.mpq`
+- `d2char.mpq`
+- `d2vid.mpq`
+
+Siehe [MPQ](./mpq.md) für weitere Details.
+
+---
+
+*Ouroboros Collective - Juni 2026*

@@ -1,28 +1,84 @@
-## Status
+# Ouroboros Collective - Projekt-Status
 
-We are currently working on features necessary to play Diablo 2 in its entirety.
-After this is completed, we will work on expanding the project to include tools and plugin support for modding, as well as writing completely new games with the engine.
+**ARE-Diablo2-BaalAal - Juni 2026**
 
-At the moment (March 2021) the game starts, you can select any character and run around Act1 town.
-You can also open any of the game's panels.
+---
 
-Much work has been made in the background, but a lot of work still has to be done for the game to be playable.
+## 🎯 Aktueller Fokus
 
-> Q: Where help is currently most needed?
+Unser Hauptfokus liegt auf der **Mobile Migration** des Projekts. Die Axiomatic BaalAal Engine wurde erfolgreich integriert, und wir arbeiten nun an der Web-Client Entwicklung.
 
-The best way to help right now is to focus all of your energy on [HellSpawner].
-This is a GUI application for viewing, editing, and creating Diablo II files.
-This will help us work on `OpenDiablo2.mpq` using [Hellspawner].
-In other words, the [OpenDiablo2] codebase will be soon obsoleted.
-We're currently moving the core features into the [AbyssEngine] (game engine), and the implementation specific stuff will go into a _shim_ `MPQ` which later will become the OpenDiablo 2 project.
-The [OpenDiablo2] repository will become the new place for the `OpenDiablo2.mpq` file, which [AbyssEngine] is meant to use it.
-So it's not that the current logic is going to be removed/wasted, but we will just need to translated its appropriate parts:
+---
 
-* In-game logic and interactivity will be translated to Javascript
-* while things like entity composition and map rendering will implemented by the game engine.
+## ✅ Abgeschlossene Meilensteine
 
-Feel free to contribute!
+### Engine Migration
+- [x] Axiomatic BaalAal Engine Integration
+- [x] Deterministic State Management (Kappa-space Koordinaten)
+- [x] Ouroboros Cycle System für Resonanz-Stabilität
+- [x] KappaSystem für Logik-Koordinaten
 
-[AbyssEngine]: https://github.com/OpenDiablo2/AbyssEngine
-[OpenDiablo2]: https://github.com/OpenDiablo2/OpenDiablo2
-[HellSpawner]: https://github.com/OpenDiablo2/HellSpawner
+### Sicherheit
+- [x] WebSocket Origin Validierung
+- [x] JS Execution Timeouts
+- [x] Lokaler WebSocket-Server (Standard)
+- [x] Deaktivierung von arbitrary `js` Command
+
+### Performance
+- [x] Tile Lookup und Caching optimiert
+- [x] Escape Menu UI State Management verbessert
+- [x] Ebiten Renderer Verbesserungen
+- [x] 3D Audio Bias Implementation
+
+### Code-Qualität
+- [x] Umfangreiche Unit-Tests
+- [x] NewGameControls Refactoring
+- [x] Gamma und Contrast Configuration
+- [x] MPQ Decompression Hardening
+
+---
+
+## 🔄 In Bearbeitung
+
+### Mobile Core
+- [ ] Web-Client Framework (Next.js)
+- [ ] Touch-Controls Implementation
+- [ ] Responsive UI Design
+- [ ] Asset-Streaming
+
+### Multiplayer Vorbereitung
+- [ ] Session Management
+- [ ] Cross-Platform Matchmaking
+
+---
+
+## 📋 Nächste Schritte
+
+1. **Web-Client Alpha**: Funktionsfähiger Mobile-Web-Client
+2. **Touch-Controls**: Virtual Joystick und Hotbar
+3. **Single-Player**: Spielbarer Single-Player Modus
+4. **Multiplayer Beta**: Multiplayer-Support
+
+---
+
+## 🛠️ Technologie-Stack
+
+| Komponente | Status | Beschreibung |
+|------------|--------|--------------|
+| Go Backend | ✅ Stabil | Game Server, Engine Core |
+| Axiomatic Engine | ✅ Stabil | BaalAal Logic, Kappa-System |
+| Web Client | 🔄 In Entwicklung | Next.js, Mobile-optimiert |
+| Ebiten Renderer | ✅ Stabil | 2D Graphics |
+| WebSocket | ✅ Stabil | Networking |
+
+---
+
+## 🤝 Beitragende
+
+Dieses Projekt ist ein Community-Projekt von **Ouroboros Collective**. 
+Beiträge sind willkommen! Siehe [CONTRIBUTING.md](./CONTRIBUTING.md).
+
+---
+
+*Letzte Aktualisierung: Juni 2026*
+*Ouroboros Collective - ARE-Diablo2-BaalAal*

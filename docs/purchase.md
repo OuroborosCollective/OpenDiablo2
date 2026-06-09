@@ -1,46 +1,33 @@
-# Purchase the official game
+# Ouroboros Collective - Diablo 2 Kaufen
 
-1. Buy [Diablo II (2000)](https://eu.shop.battle.net/en-gb/product/diablo-ii).
+**ARE-Diablo2-BaalAal**
 
-![Buy Diablo](./buydiablo.png)
+---
 
-2. Write down your CD-Key and start downloading the game.
+## 🛒 Offizieller Kauf
 
-![Get your CD-Key](./cdkey.png)
+Das Projekt benötigt die originalen Diablo 2 Dateien von Blizzard:
 
-3. The Blizzard Downloader works only with Windows. Find a Windows PC and download the game.
+### Kauf-Links
+- [Diablo II Standard](https://us.shop.battle.net/en-us/product/diablo-ii)
+- [Diablo II Lord of Destruction](https://us.shop.battle.net/en-us/product/diablo-ii-lord-of-destruction)
 
-![Download Diablo 2](./download.png)
+---
 
-4. Save the installer setup executable somewhere temporarily in your disk (e.g. `C:/Diablo II`) and wait until the download is complete.
+## ⚠️ Wichtig
 
-![Wait](./wait.png)
+- Nur die Retail-Version enthält alle MPQ-Dateien
+- Die Master Collection enthält beide Erweiterungen
+- Erfordert Battle.net Account
 
-5. When the download is finished the setup will automatically start Diablo II Installer.
+---
 
-![Install Diablo II](./installer.png)
+## 📜 Rechtliches
 
-6. Begin the installation! Right after accepting the license, it will ask you to insert a name and copy-paste your CD-Key (from step 2).
-   In case you forgot to save it, there should be already an e-mail at your inbox about it.
+> Diablo 2 und seine Inhalte sind ©2000 Blizzard Entertainment, Inc.
 
-![Paste your CD-Key](./cdkey2.png)
+Das Projekt ist eine **Open-Source-Re-Implementation** und erfordert eine legal erworbene Kopie des Spiels.
 
-7. Select a directory to install the game. 
-   Ideally, use the default location: `C:\Program FIles(x86)\Diablo II`.
-   
-![Select installation directory](./installpath.png)
+---
 
-8. Run the game.
-   If you are using `Windows 10` you will get a message prompt saying `Run the program without getting help`.
-   Next, click `Don't show this message again` to avoid future noise.
-   
-9. After the game launches make sure the version is **1.14b**.
-
-
-### Repeat the exact process for Diablo II: Lord of Destruction
-
-11. Buy [Diablo II: Lord of Destruction (2001)](https://eu.shop.battle.net/en-gb/product/diablo-ii-lord-of-destruction).
-
-![Buy Lord of Destruction](./lod.png)
-
-12. Repeat the steps **from 2 to 9** for Diablo II: Lord of Destruction.
+*Ouroboros Collective - Juni 2026*

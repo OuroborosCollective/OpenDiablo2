@@ -1,7 +1,39 @@
-## Debugging
+# Ouroboros Collective - Debugging
 
-### Layouts
+**ARE-Diablo2-BaalAal**
 
-Layouts can show their boundaries and other visual debugging information when they render. Set `layoutDebug` to `true` in `d2core/d2gui/layout.go` to enable this behavior.
+---
 
-![Example layout in debug mode](https://user-images.githubusercontent.com/1004323/85792085-31816480-b733-11ea-867e-291946bfff83.png)
+## 🐛 Häufige Fehler
+
+### Server startet nicht
+```bash
+# Prüfe Port-Verfügbarkeit
+lsof -i :8080
+
+# Starte mit Debug-Log
+LOG_LEVEL=debug go run .
+```
+
+### WebSocket Verbindungsfehler
+```bash
+# CORS Einstellungen prüfen
+# WebSocket Port prüfen (Standard: 8080)
+```
+
+---
+
+## 🔧 Debug Commands
+
+### Go Backend
+```bash
+# Hilfe
+go run . --help
+
+# Debug Mode
+DEBUG=1 go run .
+```
+
+---
+
+*Ouroboros Collective - Juni 2026*

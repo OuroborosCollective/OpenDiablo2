@@ -1,36 +1,130 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Ouroboros Collective - Web Client
 
-## Getting Started
+**ARE-Diablo2-BaalAal - Mobile/Web Frontend**
 
-First, run the development server:
+---
 
+## 🎮 Überblick
+
+Der **Web Client** ist das mobile-optimierte Frontend für die **Axiomatic BaalAal Engine**. Er ermöglicht das Spielen von Diablo 2 über den Browser auf Desktop und Mobile-Geräten.
+
+### Technologie-Stack
+- **Framework:** Next.js 14+
+- **Sprache:** TypeScript
+- **Styling:** Tailwind CSS
+- **3D Rendering:** Babylon.js
+- **State:** React hooks
+
+---
+
+## 🐍 Axiomatic Integration
+
+Der Web-Client kommuniziert mit der **Axiomatic BaalAal Engine** über:
+- WebSocket für Echtzeit-Kommunikation
+- REST API für Asset-Metadaten
+- Kappa-space Koordinaten für deterministische State-Synchronisation
+
+---
+
+## 🚀 Getting Started
+
+### Voraussetzungen
+- Node.js 18+
+- npm oder yarn
+
+### Installation
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cd web-client
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Development
+```bash
+npm run dev
+# Öffnet http://localhost:3000
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Production Build
+```bash
+npm run build
+npm start
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## 📱 Mobile-Optimierung
 
-To learn more about Next.js, take a look at the following resources:
+### Touch-Controls
+- Virtual Joystick für Bewegung
+- Tap-to-Attack Interface
+- On-screen Hotbar
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Responsive Design
+- Unterstützt 16:9, 18:9, 20:9 Displays
+- Portrait und Landscape Mode
+- Dynamic HUD scaling
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Performance
+- Lazy Loading für Assets
+- Progressive Web App (PWA) Support
+- Offline-Capability (Service Worker)
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 📁 Projektstruktur
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+web-client/
+├── app/              # Next.js App Router
+│   └── page.tsx      # Hauptseite
+├── components/        # React Komponenten
+│   └── BabylonScene.tsx  # 3D Rendering
+├── public/           # Statische Assets
+├── utils/            # Utility Funktionen
+└── package.json      # Dependencies
+```
+
+---
+
+## 🔧 Konfiguration
+
+### Environment Variables
+```env
+NEXT_PUBLIC_WS_URL=ws://localhost:8080
+NEXT_PUBLIC_API_URL=http://localhost:8080/api
+```
+
+### Mobile-spezifische Einstellungen
+```typescript
+// utils/mobile-config.ts
+export const MOBILE_CONFIG = {
+  joystickSize: 120,
+  hotbarSlots: 6,
+  targetFPS: 60,
+};
+```
+
+---
+
+## 🧪 Testing
+
+```bash
+# Unit Tests
+npm test
+
+# E2E Tests
+npm run test:e2e
+
+# Linting
+npm run lint
+```
+
+---
+
+## 📜 Lizenz
+
+GPL v3 - Siehe Haupt-[README.md](../README.md)
+
+---
+
+*Ouroboros Collective - Juni 2026*

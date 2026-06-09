@@ -1,35 +1,30 @@
-# NOTE 
-<image align="left" src="https://user-images.githubusercontent.com/242652/138285004-b27d55b3-163b-4fe3-a8ff-6c34518044bd.png">
-This project is currently being split into an Deterministic Logical-Engine+Framework (called ARE-Engine) and the game as a project (still called AREDiablo2-BaalAal).
-<br /><br />
-
-
-<br clear="all" />
-
-# Diablo2 (Axiomatic BaalAal Edition)
-
-![CircleCI](https://img.shields.io/circleci/build/github/OpenDiablo2/OpenDiablo2/master)
-[![Go Report Card](https://goreportcard.com/badge/github.com/OpenDiablo2/OpenDiablo2)](https://goreportcard.com/report/github.com/OpenDiablo2/OpenDiablo2)
-[![GoDoc](
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![Discord](https://img.shields.io/discord/515518620034662421?label=Discord&style=social)](https://discord.gg/pRy8tdc)
-[![Twitch Status](https://img.shields.io/twitch/status/essial?style=social)](https://www.twitch.tv/essial)
-[![Subreddit subscribers](https://img.shields.io/reddit/subreddit-subscribers/OpenDiablo2?label=reddit&style=social)](https://www.reddit.com/r/OpenDiablo2/)
-
+# Ouroboros Collective - ARE-Diablo2-BaalAal
 
 ![Logo](d2logo.png)
 
-[![Patreon](https://img.shields.io/badge/dynamic/json?color=%23e85b46&label=Support%20us%20on%20Patreon&query=data.attributes.patron_count&suffix=%20patrons&url=https://www.patreon.com/api/campaigns/4762180)](
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![Discord](https://img.shields.io/discord/515518620034662421?label=Discord&style=social)](https://discord.gg/pRy8tdc)
 
-----
-[Diablo2](https://diablo2.com/) is an ARPG game engine in the same vein of the 2000's games, and supports playing Diablo 2.
+---
+
+## 🎮 Projektübersicht
+
+**ARE-Diablo2-BaalAal** ist ein Open-Source-Re-Implementation des klassischen ARPG-Spiels Diablo 2, entwickelt von **Ouroboros Collective**.
+
+Das Projekt nutzt die **Axiomatic BaalAal Engine** - eine deterministische, logikbasierte Engine, die für Mobile und Web optimiert ist.
+
+> **Hinweis:** Das Projekt benötigt die originalen Diablo 2 Spieldateien. Sie benötigen eine legal erworbene Kopie von [Diablo 2](https://us.shop.battle.net/en-us/product/diablo-ii) und der Erweiterung [Lord of Destruction](https://us.shop.battle.net/en-us/product/diablo-ii-lord-of-destruction).
+
+---
 
 ## 🐍 Axiomatic BaalAal Engine
 
-This project has transitioned from arbitrary JavaScript evaluation to the **Axiomatic BaalAal Engine**. This new architecture ensures:
-- **Deterministic State:** Using Kappa-space coordinates (1000-base integer scaling).
-- **Recursive Logic:** Implementing the BaalAal "self-eating snake" (Ouroboros) cycle system for resonance stability.
-- **Security:** Arbitrary code execution via `js` command is disabled in release builds and replaced by restricted axiomatic operations (`ax-*`).
+Die **Axiomatic BaalAal Engine** ist das Herzstück unseres Projekts:
+
+- **Deterministic State:** Kappa-space Koordinaten (1000-base integer scaling)
+- **Recursive Logic:** Ouroboros "selbst-fressende Schlange" Zyklus für Resonanz-Stabilität
+- **Security:** Arbitrary Code Execution via `js` ist deaktiviert - nur axiomatic operations (`ax-*`)
+- **Mobile-First:** Optimiert für Touch-Controls und mobile Displays
 
 ---
 
@@ -37,88 +32,86 @@ This project has transitioned from arbitrary JavaScript evaluation to the **Axio
 
 ### ✅ Erfolgreich integrierte Änderungen:
 
-**Sicherheit:**
-- 🔒 WebSocket Origin Validierung implementiert
-- 🔒 JS Execution Timeouts konfiguriert  
-- 🔒 Lokaler WebSocket-Server als Standard
+**🔒 Sicherheit:**
+- WebSocket Origin Validierung implementiert
+- JS Execution Timeouts konfiguriert  
+- Lokaler WebSocket-Server als Standard
 
-**Performance:**
-- ⚡ Tile Lookup und Caching optimiert
-- ⚡ Escape Menu UI State Management verbessert
-- ⚡ Ebiten Renderer Verbesserungen
+**⚡ Performance:**
+- Tile Lookup und Caching optimiert
+- Escape Menu UI State Management verbessert
+- Ebiten Renderer Verbesserungen
 
-**Tests:**
-- 🧪 Unit Tests für stringutils Utility Funktionen
-- 🧪 Tests für Ext2SourceType und Ext2AssetType
+**🧪 Tests:**
+- Unit Tests für stringutils Utility Funktionen
+- Tests für Ext2SourceType und Ext2AssetType
 
-**Code-Qualität:**
-- 🧹 NewGameControls Refactoring
-- 🧹 Gamma und Contrast Configuration in Ebiten Renderer
-- 🧹 3D Audio Bias Implementation
+**🧹 Code-Qualität:**
+- NewGameControls Refactoring
+- Gamma und Contrast Configuration in Ebiten Renderer
+- 3D Audio Bias Implementation
+
+**🌐 Mobile Migration:**
+- Web-Client mit Next.js Framework
+- Mobile-freundliche Asset-Metadaten-Anzeige
+- Touch-Controls vorbereitet
 
 ---
 
-The engine is written in Go and is cross platform.
+## 🚀 Schnellstart
 
-> The project does not ship with the assets or content required to play Diablo 2.
-You must have a legally purchased copy of [Diablo 2](https://us.shop.battle.net/en-us/product/diablo-ii) and its expansion [Lord of Destruction](https://us.shop.battle.net/en-us/product/diablo-ii-lord-of-destruction) installed on your computer in order to run that game on this engine.
+### Voraussetzungen
+- Go 1.21+
+- Node.js 18+
+- MPQ-Dateien von Diablo 2
 
-If you like to contribute to OpenDiablo2, please be so kind to read our [Contribution Policy](./docs/CONTRIBUTING.md) first.
+### Backend (Go Server)
+```bash
+go build -o server .
+./server
+```
 
-----
+### Web-Client (Next.js)
+```bash
+cd web-client
+npm install
+npm run dev
+```
 
-## Documentation
+---
 
-_Stay awhile and listen_ ...
+## 📁 Projektstruktur
 
-### ⚡ Project Info
+```
+ouroboros-collective/
+├── d2app/           # Hauptanwendung
+├── d2common/        # Gemeinsame Utilities
+├── d2core/          # Core Engine
+├── d2game/          # Game Logik
+├── d2networking/    # Netzwerk & WebSocket
+├── d2script/        # Axiomatic Engine (BaalAal)
+├── d2thread/        # Threading
+├── web-client/      # Mobile/Web Frontend (Next.js)
+└── docs/            # Dokumentation
+```
 
-* 👉 **[Current Status](./docs/status.md)** 👈 - what you should focus on
-* [Roadmap](./docs/roadmap.md) - Planning ahead
-* Design - High-level overview of the OpenDiablo2 org and its projects
-* [FAQ](./docs/faq.md) - Common questions from new people to the project
+---
 
-### ⭐ For Users
+## 🔥 Für Entwickler
 
-* [Purchase](./docs/purchase.md) - Buy the official game from Blizzard
-* [MPQ](./docs/mpq.md) - Locate the MPQ files
-* [Install](./docs/install.md) - Install OpenDiablo2 to your system (Linux/Windows/MacOS)
-* [Run it](./docs/play.md) - How to play the game
+* [Building](./docs/building.md) - Build-Anleitung
+* [Development](./docs/development.md) - Entwickler-Anleitung
+* [Contributing](./docs/CONTRIBUTING.md) - Beitragsrichtlinien
+* [Roadmap](./docs/roadmap.md) - Projekt-Roadmap
 
-### 🔥 For Developers
+---
 
-* [Building](./docs/building.md) - Instructions for building the project
-* [Development](./docs/development.md) - Instructions for developers who want to contribute
-* [Profiling](./docs/profiling.md) - Debug performance issues
-* [Debugging](./docs/debug.md) - Common errors and pitfalls
+## 📜 Lizenz
 
-## Screenshots
+Dieses Projekt ist lizenziert unter **GPL v3**.
 
-![Main Menu](docs/MainMenuSS.png)
+Diablo 2 und seine Inhalte sind ©2000 Blizzard Entertainment, Inc. Alle Rechte vorbehalten.
 
-![Select Hero](docs/SelectHeroSS.png)
+---
 
-![Select Hero](docs/areas.gif)
-
-![Gameplay](docs/Gameplay.png)
-
-![Inventory Window](docs/Inventory.png)
-
-![Game Panels](docs/game_panels.png)
-
-## Additional Credits
-
-*   Diablo2 Logo
-    *   Jose Pardilla (th3-prophetman)
-*   DT1 File Specifications
-    *   Paul SIRAMY (http://paul.siramy.free.fr/\_divers/dt1\_doc/)
-*   Other Specifications and general info
-    *   Various users on [Phrozen Keep](https://d2mods.info/home.php)
-
-## Legal Notice
-
-Please note that **this game is neither developed by, nor endorsed by Blizzard or its parent company Activision**.
-
-Diablo 2 and its content is ©2000 Blizzard Entertainment, Inc. All rights reserved. Diablo and Blizzard Entertainment are trademarks or registered trademarks of Blizzard Entertainment, Inc. in the U.S. and/or other countries.
-
-ALL OTHER TRADEMARKS ARE THE PROPERTY OF THEIR RESPECTIVE OWNERS.
+*Ein Projekt von [Ouroboros Collective](./docs/CONTRIBUTING.md)*

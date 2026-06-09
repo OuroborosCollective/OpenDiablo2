@@ -1,31 +1,129 @@
-## Building
+# Ouroboros Collective - Build-Anleitung
 
-To pull the project down, run `go get github.com/OpenDiablo2/OpenDiablo2`
+**ARE-Diablo2-BaalAal**
 
-On windows this folder will most likely be in `%USERPROFILE%\go\src\github.com\OpenDiablo2\OpenDiablo2`
+---
 
-In the root folder, run `go get -d` to pull down all dependencies.
+## 🏗️ Voraussetzungen
 
-To run the project, run `go run .` from the root folder.
+- Go 1.21+
+- Node.js 18+ (für Web-Client)
+- Git
 
-You can also open the root folder in VSCode. Make sure you have the `ms-vscode.go` plugin installed.
+---
 
-### Linux
+## 🔨 Backend (Go Server) bauen
 
-There are several dependencies which need to be installed additionally.
-To install them you can use `./build.sh` in the project root folder - this script takes care of the installation for you.
+### Alle Module herunterladen
+```bash
+go mod download
+```
 
-### Windows
+### Development Build
+```bash
+go build -o dev-server .
+./dev-server
+```
 
-### MacOS
+### Production Build
+```bash
+go build -ldflags="-s -w" -o prod-server .
+./prod-server
+```
 
-1. Before start, download and install Go programming language [here](https://golang.org/doc/install) if needed.
-2. Launch Terminal (Note: Restart any open Terminal console if needed)
-3. Fetch the OpenDiablo2 project with this comand: `go get github.com/OpenDiablo2/OpenDiablo2`
-4. The OpenDiablo2 will be at `~/go/bin/OpenDiablo2` but we still need to download the official Diablo 2 and LoD.
-5. Purchase and download Diablo II (2000) and Diablo II: Lord of Destruction (2001) from Battle.net. The downloaders will be in form of EXE.
-6. Find a Windows PC, or use Virtual Machine (e.g. VirtualBox), or Bootcamp for Mac, or Parallels, to install both games using the downloaders.
-7. Copy the installed games from Windows to macOS's `/Applications/Diablo II/` folder. Requires administrator permission.
-8. Make sure the `/Applications/Diablo II/patch_d2.mpq` is in place.
-9. Run OpenDialo2 by `~/go/bin/OpenDiablo2` in Terminal.
-10. Enjoy.
+### Mit Tags bauen
+```bash
+go build -tags="mobile" -o mobile-server .
+```
+
+---
+
+## 🌐 Web-Client bauen
+
+### Installation
+```bash
+cd web-client
+npm install
+```
+
+### Development Server
+```bash
+npm run dev
+# Öffnet http://localhost:3000
+```
+
+### Production Build
+```bash
+npm run build
+npm start
+```
+
+### Docker Build
+```bash
+docker build -t ouroboros/web-client .
+docker run -p 3000:3000 ouroboros/web-client
+```
+
+---
+
+## 📱 Mobile Builds
+
+### iOS (requires MacOS)
+```bash
+cd web-client
+npx next export
+# Export für iOS WebView vorbereiten
+```
+
+### Android
+```bash
+cd web-client
+npx next export
+# Für Android WebView verpacken
+```
+
+---
+
+## 🧪 Tests ausführen
+
+```bash
+# Go Tests
+go test ./...
+
+# Web-Client Tests
+cd web-client
+npm test
+```
+
+---
+
+## 🐛 Troubleshooting
+
+### Go Build Fehler
+```bash
+# Cache leeren
+go clean -cache
+go mod tidy
+```
+
+### Node Module Fehler
+```bash
+cd web-client
+rm -rf node_modules
+npm install
+```
+
+---
+
+## 📦 Abhängigkeiten
+
+| Paket | Version | Beschreibung |
+|-------|---------|--------------|
+| Go | 1.21+ | Backend |
+| Next.js | 14+ | Web Framework |
+| Ebiten | latest | 2D Rendering |
+| Babylon.js | latest | 3D Rendering |
+
+---
+
+*Ouroboros Collective - Juni 2026*

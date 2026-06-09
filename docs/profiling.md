@@ -1,16 +1,43 @@
-## Profiling
+# Ouroboros Collective - Profiling
 
-There are many profiler options to debug performance issues.
-These can be enabled by supplying the following command-line option and are saved in the `pprof` directory:
+**ARE-Diablo2-BaalAal**
 
-`go run . --profile=cpu`
+---
 
-Available profilers:\
-`cpu` `mem` `block` `goroutine` `trace` `thread` `mutex`
+## 🔍 Performance-Analyse
 
-You can export the profiler output with the following command:\
-`go tool pprof --pdf ./OpenDiablo2 pprof/profiler.pprof > file.pdf`
+### Go Profiling
+```bash
+# CPU Profiling starten
+curl http://localhost:6060/debug/pprof/profile?seconds=30 > cpu.prof
 
-In game you can create a heap dump by pressing `~` and typing `dumpheap`. A heap.pprof is written to the `pprof` directory.
+# Memory Profiling
+curl http://localhost:6060/debug/pprof/heap > mem.prof
 
-You may need to install [Graphviz](http://www.graphviz.org/download/) in order to convert the profiler output.
+# Analyse
+go tool pprof -http=:8081 cpu.prof
+```
+
+### Web-Client Performance
+```javascript
+// Performance API nutzen
+performance.mark('game-loop-start');
+// Game loop
+performance.mark('game-loop-end');
+performance.measure('game-loop', 'game-loop-start', 'game-loop-end');
+```
+
+---
+
+## 📊 Metriken
+
+| Metrik | Ziel | Aktuell |
+|--------|------|---------|
+| FPS | 60 | Monitor |
+| Memory | <500MB | Monitor |
+| Latency | <50ms | Monitor |
+| Load Time | <5s | Monitor |
+
+---
+
+*Ouroboros Collective - Juni 2026*
