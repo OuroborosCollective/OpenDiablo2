@@ -9,13 +9,19 @@ import { AssetMetadata } from "@/components/AssetSidebar";
 interface BabylonSceneProps {
   onAxiomaticUpdate?: (resonance: number, cycle: number) => void;
   onAssetMetadataUpdate?: (assets: AssetMetadata[]) => void;
+  joystickInput?: { x: number; y: number };
 }
 
-const BabylonScene: React.FC<BabylonSceneProps> = ({ onAxiomaticUpdate, onAssetMetadataUpdate }) => {
+const BabylonScene: React.FC<BabylonSceneProps> = ({ 
+  onAxiomaticUpdate, 
+  onAssetMetadataUpdate,
+  joystickInput = { x: 0, y: 0 }
+}) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const socketRef = useRef<WebSocket | null>(null);
   const [status, setStatus] = useState("Connecting...");
   const playerRef = useRef<Mesh | null>(null);
+  const lastJoystickRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -76,7 +82,7 @@ const BabylonScene: React.FC<BabylonSceneProps> = ({ onAxiomaticUpdate, onAssetM
         const moveData = JSON.parse(atob(packet.packetData));
         if (playerRef.current) {
           playerRef.current.position.x = moveData.destX;
-          playerRef.current.position.z = moveData.destY; // Mapping Y to Z for 3D ground
+          playerRef.current.position.z = moveData.destY;
         }
       } else if (packet.packetType === PacketType.AxiomaticStatus) {
         const statusData = JSON.parse(atob(packet.packetData));
@@ -101,13 +107,12 @@ const BabylonScene: React.FC<BabylonSceneProps> = ({ onAxiomaticUpdate, onAssetM
 
     // Input Handling
     scene.onPointerDown = (evt) => {
-      if (evt.button === 0) { // Left click / Touch
+      if (evt.button === 0) {
         const pickResult = scene.pick(scene.pointerX, scene.pointerY);
         if (pickResult?.hit && pickResult.pickedPoint) {
           const destX = pickResult.pickedPoint.x;
           const destY = pickResult.pickedPoint.z;
 
-          // Show marker at click location
           marker.position.set(destX, 0.1, destY);
           marker.isVisible = true;
           marker.scaling.set(1, 1, 1);
@@ -128,6 +133,38 @@ const BabylonScene: React.FC<BabylonSceneProps> = ({ onAxiomaticUpdate, onAssetM
       }
     };
 
+    // Joystick movement handler
+    const handleJoystickMovement = () => {
+      if (!playerRef.current) return;
+      
+      const threshold = 0.1; // Minimum joystick movement threshold
+      const speed = 0.15; // Movement speed
+      
+      if (Math.abs(joystickInput.x) > threshold || Math.abs(joystickInput.y) > threshold) {
+        const newX = player.position.x + joystickInput.x * speed;
+        const newZ = player.position.z + joystickInput.y * speed;
+        
+        player.position.x = newX;
+        player.position.z = newZ;
+        
+        lastJoystickRef.current = { x: joystickInput.x, y: joystickInput.y };
+        
+        // Send position update to server
+        if (ws.readyState === WebSocket.OPEN) {
+          const movePacket = {
+            packetType: PacketType.MovePlayer,
+            packetData: btoa(JSON.stringify({
+              destX: newX,
+              destY: newZ,
+              startX: player.position.x - joystickInput.x * speed,
+              startY: player.position.z - joystickInput.y * speed
+            }))
+          };
+          ws.send(JSON.stringify(movePacket));
+        }
+      }
+    };
+
     engine.runRenderLoop(() => {
       if (marker.isVisible) {
         marker.rotation.y += 0.05;
@@ -135,6 +172,10 @@ const BabylonScene: React.FC<BabylonSceneProps> = ({ onAxiomaticUpdate, onAssetM
         marker.scaling.z *= 0.98;
         if (marker.scaling.x < 0.1) marker.isVisible = false;
       }
+      
+      // Handle joystick input
+      handleJoystickMovement();
+      
       scene.render();
     });
 
@@ -149,7 +190,7 @@ const BabylonScene: React.FC<BabylonSceneProps> = ({ onAxiomaticUpdate, onAssetM
       ws.close();
       engine.dispose();
     };
-  }, [onAxiomaticUpdate, onAssetMetadataUpdate]);
+  }, [onAxiomaticUpdate, onAssetMetadataUpdate, joystickInput]);
 
   return (
     <div className="relative w-full h-full">
