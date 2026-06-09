@@ -10,14 +10,8 @@ import (
 	"github.com/OpenDiablo2/OpenDiablo2/d2script"
 )
 
-// Ouroboros integration constants
+// Ouroboros integration constants (KAPPA and timing only - Markgraf constants in emergent_logic.go)
 const (
-	// Markgraf constants for ARE-Logik
-	MarkgrafHarmonicFrequency = 0.017
-	MarkgrafExpansionCoeff    = 1.0000001
-	MarkgrafEntropyDecay      = 0.999
-	MarkgrafFeedbackWeight    = 0.05
-
 	// KAPPA chunk generation constants
 	KappaScale       = 1000 // Fixed-point spatial positioning multiplier
 	KappaMoveEpsilon = 1.0  // Minimum movement threshold in KAPPA units

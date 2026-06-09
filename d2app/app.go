@@ -31,6 +31,7 @@ import (
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2asset"
 	ebiten2 "github.com/OpenDiablo2/OpenDiablo2/d2core/d2audio/ebiten"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2config"
+	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2emergent"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2gui"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2input"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2render/ebiten"
@@ -76,6 +77,7 @@ type App struct {
 	tAllocSamples     *ring.Ring
 	guiManager        *d2gui.GuiManager
 	config            *d2config.Configuration
+	ouroboros         *d2emergent.OuroborosLogikSystem
 	*d2util.Logger
 	errorMessage error
 	*Options
@@ -179,6 +181,15 @@ func (a *App) loadEngine() error {
 	}
 
 	scriptEngine := d2script.CreateScriptEngine()
+
+	// Initialize Ouroboros ARE-Logik emergent systems
+	a.ouroboros = d2emergent.NewOuroborosLogikSystem(scriptEngine.BaalAal, *a.Options.LogLevel)
+	d2emergent.NewNPCEmergentSystem(a.ouroboros, scriptEngine.BaalAal, *a.Options.LogLevel)
+	d2emergent.NewCombatEmergentSystem(a.ouroboros, scriptEngine.BaalAal, *a.Options.LogLevel)
+	d2emergent.NewItemEmergentSystem(a.ouroboros, scriptEngine.BaalAal, *a.Options.LogLevel)
+
+	// Set emergent systems on script engine
+	scriptEngine.SetEmergentSystems(a.ouroboros)
 
 	uiManager := d2ui.NewUIManager(a.asset, renderer, inputManager, *a.Options.LogLevel, audio)
 
