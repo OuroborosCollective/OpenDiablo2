@@ -240,23 +240,19 @@ func TestItemEmergentSystem(t *testing.T) {
 
 // TestOuroborosIntegration tests the full system integration
 func TestOuroborosIntegration(t *testing.T) {
-	// Create full script engine with all emergent systems
-	engine := d2script.CreateScriptEngineWithLogLevel(d2util.LogLevelDefault)
+	// Create BaalAal engine and Ouroboros system
+	baalAal := d2script.NewBaalAalEngine()
+	ouroboros := NewOuroborosLogikSystem(baalAal, d2util.LogLevelDefault)
+
+	// Create a mock wrapper that implements EmergentSystems
+	mockEmergent := &mockEmergentSystems{ouroboros: ouroboros}
+
+	// Create script engine
+	engine := d2script.CreateScriptEngine()
+	engine.SetEmergentSystems(mockEmergent)
 
 	if engine.Ouroboros == nil {
-		t.Fatal("expected Ouroboros system to be initialized")
-	}
-
-	if engine.NPCEmergent == nil {
-		t.Fatal("expected NPC emergent system to be initialized")
-	}
-
-	if engine.CombatEmergent == nil {
-		t.Fatal("expected combat emergent system to be initialized")
-	}
-
-	if engine.ItemEmergent == nil {
-		t.Fatal("expected item emergent system to be initialized")
+		t.Fatal("expected Ouroboros system to be set")
 	}
 
 	// Test dispatching events
@@ -289,6 +285,23 @@ func TestOuroborosIntegration(t *testing.T) {
 
 	t.Logf("ARE Status - Tick: %d, Resonance: %.4f, Expansion: %.4f, Entropy: %.4f",
 		tick, res, exp, ent)
+}
+
+// mockEmergentSystems wraps OuroborosLogikSystem to implement EmergentSystems interface
+type mockEmergentSystems struct {
+	ouroboros *OuroborosLogikSystem
+}
+
+func (m *mockEmergentSystems) Advance() {
+	m.ouroboros.Advance()
+}
+
+func (m *mockEmergentSystems) GetAREStatus() (resonance, expansion, entropy float64, tick uint64) {
+	return m.ouroboros.GetStatus()
+}
+
+func (m *mockEmergentSystems) GetEntityState(entityID string) interface{} {
+	return m.ouroboros.GetEntityState(entityID)
 }
 
 // TestOuroborosConcurrentAccess tests thread safety

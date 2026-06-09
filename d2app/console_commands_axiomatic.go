@@ -20,8 +20,6 @@ func (a *App) initAxiomaticCommands() {
 		{"are-status", "show ARE-Logik system status", nil, a.areStatus},
 		{"are-emerge", "trigger manual emergence cycle", nil, a.areEmerge},
 		{"are-chunks", "show KAPPA chunk registry", nil, a.areChunks},
-		{"npc-states", "show NPC emergent states", nil, a.npcStates},
-		{"combat-history", "show recent combat events", nil, a.combatHistory},
 	}
 
 	for _, cmd := range axCommands {
@@ -87,7 +85,9 @@ func (a *App) areStatus([]string) error {
 
 // areEmerge triggers a manual emergence cycle
 func (a *App) areEmerge([]string) error {
-	a.scriptEngine.Ouroboros.Advance()
+	if a.ouroboros != nil {
+		a.ouroboros.Advance()
+	}
 	resonance, expansion, entropy, tick := a.scriptEngine.GetAREStatus()
 
 	a.terminal.Infof("Manual emergence cycle triggered")
@@ -99,7 +99,12 @@ func (a *App) areEmerge([]string) error {
 
 // areChunks displays the KAPPA chunk registry
 func (a *App) areChunks([]string) error {
-	ouroboros := a.scriptEngine.Ouroboros
+	if a.ouroboros == nil {
+		a.terminal.Infof("Ouroboros system not initialized.")
+		return nil
+	}
+
+	ouroboros := a.ouroboros
 
 	ouroboros.mu.RLock()
 	defer ouroboros.mu.RUnlock()
@@ -119,48 +124,6 @@ func (a *App) areChunks([]string) error {
 			a.terminal.Infof("  ... and %d more chunks", chunkCount-count)
 			break
 		}
-	}
-
-	return nil
-}
-
-// npcStates displays NPC emergent states
-func (a *App) npcStates([]string) error {
-	npcEmergent := a.scriptEngine.NPCEmergent
-
-	states := npcEmergent.GetAllNPCStates()
-	a.terminal.Infof("=== NPC Emergent States (%d NPCs) ===", len(states))
-
-	count := 0
-	for npcID, state := range states {
-		state.mu.RLock()
-		a.terminal.Infof("  %s: Behavior=%v, Tick=%d, Resonance=%.3f",
-			npcID, state.CurrentBehavior, state.BehaviorTick, state.ResonanceInfluence)
-		state.mu.RUnlock()
-
-		count++
-		if count >= 20 {
-			a.terminal.Infof("  ... and %d more NPCs", len(states)-count)
-			break
-		}
-	}
-
-	return nil
-}
-
-// combatHistory displays recent combat events
-func (a *App) combatHistory([]string) error {
-	combatEmergent := a.scriptEngine.CombatEmergent
-
-	history := combatEmergent.GetCombatHistory()
-	a.terminal.Infof("=== Combat History (%d events) ===", len(history))
-
-	count := 0
-	for i := len(history) - 1; i >= 0 && count < 20; i-- {
-		event := history[i]
-		a.terminal.Infof("  [%s -> %s] Dmg=%.2f, Crit=%v, Res=%.3f",
-			event.SourceID, event.TargetID, event.Damage, event.IsCritical, event.Resonance)
-		count++
 	}
 
 	return nil
