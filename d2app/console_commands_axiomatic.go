@@ -17,6 +17,11 @@ func (a *App) initAxiomaticCommands() {
 		{"ax-pub", "publish an axiomatic event", []string{"type", "payload"}, a.axPublish},
 		{"ax-history", "show axiomatic event history", nil, a.axHistory},
 		{"ax-stats", "show axiomatic engine stats", nil, a.axStats},
+		{"are-status", "show ARE-Logik system status", nil, a.areStatus},
+		{"are-emerge", "trigger manual emergence cycle", nil, a.areEmerge},
+		{"are-chunks", "show KAPPA chunk registry", nil, a.areChunks},
+		{"npc-states", "show NPC emergent states", nil, a.npcStates},
+		{"combat-history", "show recent combat events", nil, a.combatHistory},
 	}
 
 	for _, cmd := range axCommands {
@@ -59,5 +64,104 @@ func (a *App) axHistory([]string) error {
 
 func (a *App) axStats([]string) error {
 	a.terminal.Infof("Axiomatic Engine (BaalAal) is active.")
+	return nil
+}
+
+// areStatus displays the current ARE-Logik system status
+func (a *App) areStatus([]string) error {
+	resonance, expansion, entropy, tick := a.scriptEngine.GetAREStatus()
+
+	a.terminal.Infof("=== Ouroboros ARE-Logik Status ===")
+	a.terminal.Infof("Tick: %d", tick)
+	a.terminal.Infof("Global Resonance: %.6f", resonance)
+	a.terminal.Infof("Expansion Factor: %.6f", expansion)
+	a.terminal.Infof("Entropy: %.6f", entropy)
+
+	// Get BaalAal status
+	baalRes, baalCycle := a.scriptEngine.BaalAal.GetStatus()
+	a.terminal.Infof("BaalAal Resonance: %.6f", baalRes)
+	a.terminal.Infof("BaalAal Cycle: %.6f", baalCycle)
+
+	return nil
+}
+
+// areEmerge triggers a manual emergence cycle
+func (a *App) areEmerge([]string) error {
+	a.scriptEngine.Ouroboros.Advance()
+	resonance, expansion, entropy, tick := a.scriptEngine.GetAREStatus()
+
+	a.terminal.Infof("Manual emergence cycle triggered")
+	a.terminal.Infof("Tick: %d, Resonance: %.6f, Expansion: %.6f, Entropy: %.6f",
+		tick, resonance, expansion, entropy)
+
+	return nil
+}
+
+// areChunks displays the KAPPA chunk registry
+func (a *App) areChunks([]string) error {
+	ouroboros := a.scriptEngine.Ouroboros
+
+	ouroboros.mu.RLock()
+	defer ouroboros.mu.RUnlock()
+
+	chunkCount := len(ouroboros.chunkRegistry)
+	a.terminal.Infof("=== KAPPA Chunk Registry (%d chunks) ===", chunkCount)
+
+	count := 0
+	for id, chunk := range ouroboros.chunkRegistry {
+		chunk.mu.RLock()
+		a.terminal.Infof("  %s: KAPPA(%d, %d), Resonance=%.3f, Occupants=%d, Gen=%d",
+			id, chunk.X, chunk.Y, chunk.Resonance, len(chunk.Occupants), chunk.Generation)
+		chunk.mu.RUnlock()
+
+		count++
+		if count >= 20 {
+			a.terminal.Infof("  ... and %d more chunks", chunkCount-count)
+			break
+		}
+	}
+
+	return nil
+}
+
+// npcStates displays NPC emergent states
+func (a *App) npcStates([]string) error {
+	npcEmergent := a.scriptEngine.NPCEmergent
+
+	states := npcEmergent.GetAllNPCStates()
+	a.terminal.Infof("=== NPC Emergent States (%d NPCs) ===", len(states))
+
+	count := 0
+	for npcID, state := range states {
+		state.mu.RLock()
+		a.terminal.Infof("  %s: Behavior=%v, Tick=%d, Resonance=%.3f",
+			npcID, state.CurrentBehavior, state.BehaviorTick, state.ResonanceInfluence)
+		state.mu.RUnlock()
+
+		count++
+		if count >= 20 {
+			a.terminal.Infof("  ... and %d more NPCs", len(states)-count)
+			break
+		}
+	}
+
+	return nil
+}
+
+// combatHistory displays recent combat events
+func (a *App) combatHistory([]string) error {
+	combatEmergent := a.scriptEngine.CombatEmergent
+
+	history := combatEmergent.GetCombatHistory()
+	a.terminal.Infof("=== Combat History (%d events) ===", len(history))
+
+	count := 0
+	for i := len(history) - 1; i >= 0 && count < 20; i-- {
+		event := history[i]
+		a.terminal.Infof("  [%s -> %s] Dmg=%.2f, Crit=%v, Res=%.3f",
+			event.SourceID, event.TargetID, event.Damage, event.IsCritical, event.Resonance)
+		count++
+	}
+
 	return nil
 }
